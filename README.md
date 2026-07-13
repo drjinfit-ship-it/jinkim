@@ -15,6 +15,7 @@ WRX80E-SAGE(3090×8) + ROMED8-2T(3090×7 + 2080Ti×2) 두 대로
 | 5 | [docs/05-두-대-연동.md](docs/05-두-대-연동.md) | 10G 직결, NFS, RPC/Ray 클러스터 |
 | 6 | [docs/06-자동화-운영.md](docs/06-자동화-운영.md) | systemd 자동시작, LiteLLM, Open WebUI, 음성 |
 | 7 | [docs/07-자료-모음.md](docs/07-자료-모음.md) | 조사 자료 전체 링크 |
+| 8 | [docs/08-에이전트-동향과-OpenClaw-옵시디언-헤르메스.md](docs/08-에이전트-동향과-OpenClaw-옵시디언-헤르메스.md) | 에이전트 동향, OpenClaw·Hermes·옵시디언 연동 |
 
 ## 핵심 요약 (3줄)
 
