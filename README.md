@@ -1,14 +1,25 @@
 # jinkim — 포터블 상시 에이전트 [마이]
 
-MacBook Pro M2 Max / 32GB / 2TB 위에서 로컬 LLM 기반 상시 개인 비서 **[마이]** 를
-운영하기 위한 설정·스크립트 저장소.
+로컬 LLM 기반 상시 개인 비서 **[마이]** 와 이를 뒷받침하는 자체 인프라의
+설정·스크립트 저장소.
+
+| 계층 | 기기 |
+|---|---|
+| T0 | MacBook Pro M3 Max / 64GB / 2TB — 이동형 자립 노드 |
+| T1 | Mac Studio M3 Ultra / 96GB / 1TB — 상시 허브 (마이그레이션 중) |
+| T2 | Station A: EPYC 7542 + RTX 3090 ×8 (192GB VRAM) — 상시 서빙 |
+| T2 | Station B: TR Pro 3975WX + RTX 3090 ×8 (192GB VRAM) — 학습·실험 |
+| T3 | Claude Code / Codex / Antigravity — 프론티어 코딩 |
 
 ## 현재 단계
 
 - [x] 저장소 구조 및 설계안 확정 → `docs/ARCHITECTURE.md`
 - [x] 맥북 진단 스크립트 → `scripts/01-inspect-mac.sh`
-- [x] 2대(맥미니/맥북) 병행 개발 설계 → `docs/TWO-MACHINE.md`
-- [ ] **양쪽 기기에서 진단 리포트 수집** ← *지금 할 일*
+- [x] 맥 2대 병행 개발 설계 → `docs/TWO-MACHINE.md`
+- [x] 전체 플릿 5계층 설계 및 라우팅 정책 → `docs/FLEET.md`
+- [x] GPU 스테이션 구축 실무 → `docs/GPU-STATIONS.md`
+- [ ] **Mac Studio 마이그레이션 완료 검증** ← *지금 할 일*
+- [ ] **전력·냉각 인프라 확보** ← *스테이션의 실제 전제조건*
 - [ ] 런타임 부트스트랩 (`02-bootstrap.sh`)
 - [ ] 모델 확정 및 다운로드 → `docs/MODEL-NOTES.md`
 - [ ] launchd 상시 구동 등록
@@ -31,8 +42,8 @@ bash scripts/01-inspect-mac.sh
 > `reports/*.md` 는 `.gitignore` 처리되어 있습니다. 내용은 채팅에 직접 붙여넣거나,
 > private 저장소(`docs/TWO-MACHINE.md` 4-1절)로 보내세요.
 
-**맥미니에서도 동일하게 한 번 실행하세요.** 두 기기의 리포트를 비교해야
-어느 쪽이 대형 모델을 호스팅할지 결정할 수 있습니다.
+**Mac Studio 마이그레이션이 끝나면 그쪽에서도 실행하세요.**
+Migration Assistant는 launchd 등록과 Homebrew 링크를 자주 깨뜨립니다.
 
 > 진단 스크립트는 **읽기 전용**입니다. 설치·변경·네트워크 전송을 하지 않으며,
 > 시리얼 번호·하드웨어 UUID·MAC 주소는 자동으로 마스킹됩니다.
@@ -43,4 +54,7 @@ bash scripts/01-inspect-mac.sh
 |---|---|
 | `docs/ARCHITECTURE.md` | 폴더 레이아웃, 런타임 스택, 상시 구동/포터블 설계 |
 | `docs/MODEL-NOTES.md` | 모델 후보 비교, 32GB 메모리 튜닝, 양자화 선택 |
-| `docs/TWO-MACHINE.md` | 사무실 맥미니 / 맥북 50:50 병행 개발 구조, 동기화 전략 |
+| `docs/TWO-MACHINE.md` | Mac Studio / MacBook 50:50 병행 개발, 동기화 전략 |
+| **`docs/FLEET.md`** | **최상위 설계** — 5계층 구조, 모델 배치, 작업 라우팅 정책 |
+| `docs/GPU-STATIONS.md` | RTX 3090 ×8 ×2 — 전력·냉각·PCIe·vLLM 실무 |
+| `config/litellm.yaml` | 로컬 백엔드 통합 라우터 설정 |

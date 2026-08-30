@@ -1,10 +1,13 @@
-# 2대 병행 개발 설계 — 사무실 맥미니 50% / 맥북 50%
+# 맥 2대 병행 개발 — 사무실 Mac Studio 50% / MacBook 50%
+
+> 전체 인프라(스테이션 포함) 설계는 **`FLEET.md`** 를 먼저 보세요.
+> 이 문서는 맥 2대(T0/T1) 사이의 동기화 실무만 다룹니다.
 
 ## 0. 핵심 판단
 
-50/50이면 **"맥미니=서버, 맥북=단말"** 구조는 쓰면 안 됩니다.
-그 구조는 맥북이 오프라인이거나 사무실 네트워크가 죽는 순간 개발이 멈춥니다.
-이동 중·집·카페에서 절반을 작업한다면 맥북은 **자립 가능**해야 합니다.
+50/50이면 **"Mac Studio=서버, MacBook=단말"** 구조는 쓰면 안 됩니다.
+그 구조는 MacBook이 오프라인이거나 사무실 네트워크가 죽는 순간 개발이 멈춥니다.
+이동 중·집·카페에서 절반을 작업한다면 MacBook은 **자립 가능**해야 합니다.
 
 반대로 양쪽을 완전히 독립시키면 이번엔 "어느 쪽이 최신인지" 문제가 매일 발생합니다.
 
@@ -22,42 +25,39 @@
 | **개발 도구 목록** | `Brewfile` (git) | `brew bundle` 한 방으로 환경 동일화 |
 | **언어 런타임 버전** | `mise` / `.tool-versions` (git) | Node/Python 버전 불일치가 최대 버그원 |
 
-## 2. 모델 배치 — 하이브리드
+## 2. 모델 배치 — 확정
 
 ```
-┌─ 맥미니 (사무실, 상시 전원) ────────┐      ┌─ 맥북 M2 Max 32GB (이동) ───────┐
-│                                     │      │                                 │
-│  [마이] 8B 4bit   ← 로컬 상시 상주  │      │  [마이] 8B 4bit  ← 로컬 상시    │
-│  대형 모델 30B-A3B ← 상시 대기      │      │  (대형 모델은 미보유 or 필요시) │
-│  127.0.0.1:11434                    │      │  127.0.0.1:11434                │
-│         │                           │      │         │                       │
-│  Tailscale serve → tailnet 전용     │◀─────┼─────────┘  무거운 작업은 원격  │
-└─────────────────────────────────────┘ VPN  └─────────────────────────────────┘
+┌─ Mac Studio M3 Ultra 96GB (사무실, 상시) ─┐   ┌─ MacBook M3 Max 64GB (이동) ────┐
+│                                           │   │                                 │
+│  [마이] Qwen3 32B 4bit  ← 상시 상주       │   │  [마이] Qwen3 27B abliterated   │
+│  70B 4bit               ← 온디맨드        │   │        MLX 4bit ← 상시 상주     │
+│  LiteLLM 라우터 :4000                     │   │  (+ 임베딩 모델 — 오프라인 RAG) │
+│         │                                 │   │         │                       │
+│         └── Station A/B (192GB VRAM ×2)   │◀──┼─────────┘  큰 작업은 원격 위임  │
+└───────────────────────────────────────────┘VPN└─────────────────────────────────┘
 ```
 
-- **양쪽 모두 8B를 로컬 상주** → 네트워크가 없어도 [마이]는 항상 살아 있음. 이게 자립성의 핵심.
-- **대형 모델은 맥미니에만** → 사무실 밖에서도 Tailscale로 끌어다 씀. 맥북 2TB를 17GB짜리로 낭비할 이유가 없고, 배터리도 아낌.
-- **폴백 규칙**: `mai` CLI가 맥미니 응답 없으면 자동으로 로컬 8B로 내려앉음.
-
-### 어느 쪽이 대형 모델을 호스팅하나
-맥미니 RAM이 **32GB 이상이면 맥미니**가 호스팅. **16GB 이하면 역전** — 맥북이 대형 모델을
-갖고, 맥미니는 8B + 상시 백업/CI 역할을 맡습니다. (맥미니 사양 확인 필요)
+- **양쪽 모두 로컬 모델 상주** → 네트워크가 없어도 [마이]는 항상 살아 있음.
+- **96GB > 64GB 이므로 Mac Studio가 상위 허브**. 대형 모델과 라우터를 여기서 호스팅합니다.
+- 그보다 큰 모델(235B급)은 맥이 아니라 **GPU 스테이션**의 몫입니다 (`FLEET.md` 3절).
+- **폴백 규칙**: LiteLLM이 스테이션 → Mac Studio → MacBook 순으로 자동 강등합니다.
 
 ## 3. 네트워크 — Tailscale
 
 기기 간 연결은 **Tailscale**로 통일합니다. 포트포워딩·고정 IP·DDNS 전부 불필요하고,
-카페 와이파이에서도 사무실 맥미니에 안전하게 붙습니다.
+카페 와이파이에서도 사무실 Mac Studio와 스테이션에 안전하게 붙습니다.
 
 ```bash
 brew install --cask tailscale     # 양쪽 모두
-# 로그인 후 MagicDNS 활성화 → macmini.<tailnet>.ts.net 로 접근 가능
+# 로그인 후 MagicDNS 활성화 → macstudio.<tailnet>.ts.net 로 접근 가능
 ```
 
 **보안 원칙은 그대로 유지합니다.** 추론 서버는 계속 `127.0.0.1` 에만 바인딩하고,
 외부 노출은 Tailscale 계층에서만 처리합니다.
 
 ```bash
-# 맥미니에서: 루프백 서버를 tailnet 안에만 공개 (공용 인터넷 아님)
+# Mac Studio에서: 루프백 서버를 tailnet 안에만 공개 (공용 인터넷 아님)
 tailscale serve --bg --https=8443 http://127.0.0.1:11434
 ```
 
@@ -79,7 +79,7 @@ tailscale serve --bg --https=8443 http://127.0.0.1:11434
 | `mai-memory` (신규) | **private** | `profile.md`, `journal/`, 진단 리포트 |
 
 ```bash
-# 맥미니에서 1회 — private 저장소 생성 후
+# Mac Studio에서 1회 — private 저장소 생성 후
 cd ~/MAI/memory
 git init && git remote add origin git@github.com:drjinfit-ship-it/mai-memory.git
 git add -A && git commit -m "init" && git push -u origin main
@@ -100,8 +100,8 @@ private 쪽으로 보냅니다.
 memory/
 ├── profile.md                        # 공유. 사람이 직접 편집 (충돌 시 수동 병합)
 └── journal/
-    ├── 2026-08-30.macmini.md         # 맥미니가 쓴 것
-    └── 2026-08-30.macbook.md         # 맥북이 쓴 것  → 절대 충돌 안 남
+    ├── 2026-08-30.macstudio.md       # Mac Studio가 쓴 것
+    └── 2026-08-30.macbook.md         # MacBook이 쓴 것  → 절대 충돌 안 남
 ```
 
 `profile.md`만 공유 파일인데, 갱신 빈도가 낮아 실무상 문제가 되지 않습니다.
@@ -126,10 +126,10 @@ mai resume      # 앉을 때: pull → 기억 동기화 → 마지막 작업 요
 ## 6. 환경 동일화
 
 ```bash
-# 맥미니(기준기)에서 현재 설치 목록 추출
+# Mac Studio(기준기)에서 현재 설치 목록 추출
 brew bundle dump --file=Brewfile --force --describe
 
-# 맥북에서 그대로 재현
+# MacBook에서 그대로 재현
 brew bundle install --file=Brewfile
 ```
 
@@ -143,9 +143,9 @@ mise use -g node@22 python@3.12    # .tool-versions 를 git으로 공유
 **경로도 통일하세요.** 양쪽 모두 `~/dev/` 를 작업 루트, `~/MAI/` 를 에이전트 루트로.
 경로가 다르면 스크립트·설정이 기기마다 갈라지기 시작합니다.
 
-## 7. 맥미니 상시 운영 설정
+## 7. Mac Studio 상시 운영 설정
 
-사무실 맥미니는 헤드리스로 24시간 대기해야 [마이]와 원격 빌드가 의미를 가집니다.
+사무실 Mac Studio는 24시간 대기해야 [마이] 허브와 LiteLLM 라우터가 의미를 가집니다.
 
 ```bash
 sudo pmset -a sleep 0 disksleep 0 powernap 1   # 시스템 절전 해제
@@ -162,8 +162,8 @@ sudo systemsetup -setrestartpowerfailure on    # 정전 복구 시 자동 부팅
 
 0. `mai-memory` private 저장소 생성 (또는 `jinkim` 을 private 으로 전환)
 1. 양쪽에서 `scripts/01-inspect-mac.sh` 실행 → 리포트 2개 확보
-2. Tailscale 설치 및 두 기기 연결
+2. Tailscale 설치 및 전 기기 연결
 3. `Brewfile` + `mise` 로 환경 동일화
 4. 양쪽에 `~/MAI` 생성, 8B 모델 로컬 상주
-5. 맥미니에 대형 모델 + `tailscale serve`
+5. Mac Studio에 라우터 + `tailscale serve`
 6. `mai handoff` / `mai resume` 습관화

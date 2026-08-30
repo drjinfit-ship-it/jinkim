@@ -1,0 +1,84 @@
+# LiteLLM 라우터 — 로컬 스택 전용 통합 엔드포인트
+#
+#   실행 (Mac Studio):
+#     pip install 'litellm[proxy]'
+#     litellm --config config/litellm.yaml --port 4000
+#
+#   사용:
+#     curl http://127.0.0.1:4000/v1/chat/completions \
+#       -H 'Content-Type: application/json' \
+#       -d '{"model":"mai","messages":[{"role":"user","content":"안녕"}]}'
+#
+# ⚠️ Claude Code / Codex 는 여기에 태우지 마세요.
+#    ANTHROPIC_BASE_URL 을 바꾸면 구독 인증이 깨지고 종량과금으로 전환됩니다.
+#    이 라우터는 로컬 모델 전용입니다.
+
+model_list:
+  # ── T1: Mac Studio 로컬 (기본 [마이]) ─────────────────
+  - model_name: mai
+    litellm_params:
+      model: openai/qwen3-32b
+      api_base: http://127.0.0.1:11434/v1
+      api_key: "none"
+    model_info:
+      description: "상시 비서. 지연 최소. Mac Studio M3 Ultra 로컬"
+
+  # ── T0: MacBook 로컬 (이동 중 폴백) ───────────────────
+  - model_name: mai-mobile
+    litellm_params:
+      model: openai/qwen3-27b-abliterated-mlx
+      api_base: http://macbook.TAILNET.ts.net:11434/v1
+      api_key: "none"
+
+  # ── T2: Station A — 대형 모델 (품질 우선) ─────────────
+  - model_name: mai-big
+    litellm_params:
+      model: openai/qwen3-235b-a22b-awq
+      api_base: http://station-a.TAILNET.ts.net:8000/v1
+      api_key: "none"
+    model_info:
+      description: "8×3090 TP=8. 난이도 높은 로컬 작업"
+
+  # ── T2: Station A — 배치 처리 (처리량 우선) ───────────
+  #     32B AWQ를 TP=2 × 4 replica 로 띄우고 라운드로빈
+  - model_name: mai-batch
+    litellm_params:
+      model: openai/qwen3-32b-awq
+      api_base: http://station-a.TAILNET.ts.net:8001/v1
+      api_key: "none"
+    rpm: 600
+  - model_name: mai-batch
+    litellm_params:
+      model: openai/qwen3-32b-awq
+      api_base: http://station-a.TAILNET.ts.net:8002/v1
+      api_key: "none"
+    rpm: 600
+
+  # ── 임베딩 (Station B) ────────────────────────────────
+  - model_name: mai-embed
+    litellm_params:
+      model: openai/bge-m3
+      api_base: http://station-b.TAILNET.ts.net:8100/v1
+      api_key: "none"
+
+router_settings:
+  routing_strategy: simple-shuffle
+  num_retries: 2
+  timeout: 600
+  # 스테이션이 꺼져 있으면 즉시 로컬로 폴백 — 이게 자립성의 핵심
+  fallbacks:
+    - mai-big: ["mai", "mai-mobile"]
+    - mai-batch: ["mai-big", "mai"]
+    - mai: ["mai-mobile"]
+  allowed_fails: 2
+  cooldown_time: 60
+
+litellm_settings:
+  drop_params: true
+  request_timeout: 600
+  # 로컬 전용이므로 인증 없이 두되, 반드시 127.0.0.1 바인딩 + Tailscale 로만 노출
+  set_verbose: false
+
+general_settings:
+  # tailnet 밖으로 절대 열지 말 것
+  master_key: null
