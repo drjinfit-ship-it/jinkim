@@ -19,6 +19,7 @@
 - [x] 전체 플릿 5계층 설계 및 라우팅 정책 → `docs/FLEET.md`
 - [x] GPU 스테이션 구축 실무 → `docs/GPU-STATIONS.md`
 - [x] Qwen3.8-Flash-Next 배치 검토 → `docs/QWEN38-NEXT.md`
+- [x] 녹음→해석→선제실행→보고 파이프라인 설계 및 골격 → `docs/AUTOMATION.md`
 - [ ] **Mac Studio 마이그레이션 완료 검증** ← *지금 할 일*
 - [ ] **전력·냉각 인프라 확보** ← *스테이션의 실제 전제조건*
 - [ ] 런타임 부트스트랩 (`02-bootstrap.sh`)
@@ -59,4 +60,6 @@ Migration Assistant는 launchd 등록과 Homebrew 링크를 자주 깨뜨립니�
 | **`docs/FLEET.md`** | **최상위 설계** — 5계층 구조, 모델 배치, 작업 라우팅 정책 |
 | `docs/GPU-STATIONS.md` | RTX 3090 ×8 ×2 — 전력·냉각·PCIe·NVLink·vLLM 실무 |
 | `docs/QWEN38-NEXT.md` | Qwen3.8-Flash-Next 125B-A6B — 어디서 어떻게 돌릴 것인가 |
+| **`docs/AUTOMATION.md`** | 상시 녹음 해석 · 선제 실행 · 마감 보고 파이프라인 |
 | `config/litellm.yaml` | 로컬 백엔드 통합 라우터 설정 |
+| `mai/pipeline/` | 파이프라인 실행 골격 (전사→추출→종합→게이트→보고) |

@@ -17,3 +17,8 @@ mai/memory/
 reports/*.md
 
 .DS_Store
+
+# 파이프라인 산출물 — 녹취·전사·초안은 전부 개인 데이터
+mai/inbox/
+mai/data/
+mai/drafts/
