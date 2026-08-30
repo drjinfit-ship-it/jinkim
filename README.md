@@ -6,8 +6,8 @@
 | 계층 | 기기 |
 |---|---|
 | T0 | MacBook Pro M3 Max / 64GB / 2TB — 이동형 자립 노드 |
-| T1 | Mac Studio M3 Ultra / 96GB / 1TB — 상시 허브 (마이그레이션 중) |
-| T2 | Station A: EPYC 7542 + RTX 3090 ×8 (192GB VRAM) — 상시 서빙 |
+| T1 | Mac Studio M3 Ultra / 96GB / 1TB + 외장 2TB — 상시 허브 (마이그레이션 중) |
+| T2 | Station A: EPYC 7542 + RTX 3090 ×8 (192GB VRAM, NVLink ×4) — 상시 서빙 |
 | T2 | Station B: TR Pro 3975WX + RTX 3090 ×8 (192GB VRAM) — 학습·실험 |
 | T3 | Claude Code / Codex / Antigravity — 프론티어 코딩 |
 
@@ -18,6 +18,7 @@
 - [x] 맥 2대 병행 개발 설계 → `docs/TWO-MACHINE.md`
 - [x] 전체 플릿 5계층 설계 및 라우팅 정책 → `docs/FLEET.md`
 - [x] GPU 스테이션 구축 실무 → `docs/GPU-STATIONS.md`
+- [x] Qwen3.8-Flash-Next 배치 검토 → `docs/QWEN38-NEXT.md`
 - [ ] **Mac Studio 마이그레이션 완료 검증** ← *지금 할 일*
 - [ ] **전력·냉각 인프라 확보** ← *스테이션의 실제 전제조건*
 - [ ] 런타임 부트스트랩 (`02-bootstrap.sh`)
@@ -56,5 +57,6 @@ Migration Assistant는 launchd 등록과 Homebrew 링크를 자주 깨뜨립니�
 | `docs/MODEL-NOTES.md` | 모델 후보 비교, 32GB 메모리 튜닝, 양자화 선택 |
 | `docs/TWO-MACHINE.md` | Mac Studio / MacBook 50:50 병행 개발, 동기화 전략 |
 | **`docs/FLEET.md`** | **최상위 설계** — 5계층 구조, 모델 배치, 작업 라우팅 정책 |
-| `docs/GPU-STATIONS.md` | RTX 3090 ×8 ×2 — 전력·냉각·PCIe·vLLM 실무 |
+| `docs/GPU-STATIONS.md` | RTX 3090 ×8 ×2 — 전력·냉각·PCIe·NVLink·vLLM 실무 |
+| `docs/QWEN38-NEXT.md` | Qwen3.8-Flash-Next 125B-A6B — 어디서 어떻게 돌릴 것인가 |
 | `config/litellm.yaml` | 로컬 백엔드 통합 라우터 설정 |

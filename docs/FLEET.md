@@ -7,8 +7,8 @@
 | # | 기기 | 스펙 | 역할 | 상태 |
 |---|---|---|---|---|
 | M1 | **MacBook Pro** | M3 Max / 64GB / 2TB | 이동형 주개발 + [마이] 자립 노드 | 가동 |
-| M2 | **Mac Studio** | M3 Ultra / 96GB / 1TB | 사무실 주개발 + [마이] 상시 허브 | 마이그레이션 중 |
-| G1 | **Station A** | ROMED8-2T + EPYC 7542(32c) + RTX 3090 ×8 = **192GB VRAM** | 상시 추론 서빙 | 구축 |
+| M2 | **Mac Studio** | M3 Ultra / 96GB / 1TB **+ 외장 2TB SSD** | 사무실 주개발 + [마이] 상시 허브 | 마이그레이션 중 |
+| G1 | **Station A** | ROMED8-2T + EPYC 7542(32c) + RTX 3090 ×8 = **192GB VRAM** + NVLink 4슬롯 브리지 ×4 | 상시 추론 서빙 | 구축 |
 | G2 | **Station B** | WRX80 + TR Pro 3975WX(32c) + RTX 3090 ×8 = **192GB VRAM** | 학습·실험·인덱싱 | 구축 |
 | C | **클라우드 에이전트** | Claude Code / Codex / Antigravity | 프론티어 코딩 | 구독중 |
 
@@ -36,17 +36,20 @@
 
 ## 3. 모델 배치
 
-| 계층 | 모델 | 4bit 용량 | 근거 |
-|---|---|---|---|
-| **T0 MacBook 64GB** | Qwen3 27B abliterated MLX 4bit (현재) | ~15GB | 상시 상주해도 49GB 여유. 이동 중 완전 자립 |
-| ↳ 여유분 활용 | + Qwen3 30B-A3B 또는 임베딩 모델 병행 | ~18GB | 64GB면 2개 동시 상주 가능 |
-| **T1 Mac Studio 96GB** | Llama 3.3 70B 또는 Qwen3 32B 4bit | 40GB / 18GB | 상시 대기. wired limit 상향 필요 |
-| **T2 Station A 192GB** | **Qwen3 235B-A22B AWQ INT4** | ~120GB | MoE(활성 22B) — 8×3090에서 실용 속도가 나오는 최대급 |
-| ↳ 동시 서빙 | Qwen3 32B AWQ ×2 replica | 각 ~20GB | 다중 동시 요청 처리량용 |
-| **T2 Station B** | 파인튜닝(QLoRA 70B) / 양자화 / 임베딩 대량 인덱싱 | — | 서빙과 분리해 마음껏 재부팅 |
+**Qwen3.8-Flash-Next 검토 결과는 `QWEN38-NEXT.md` 에 별도 정리했습니다.**
 
-> **MacBook 64GB는 지금 과소 사용 중입니다.** 27B 4bit 하나면 15GB로, 절반도 안 씁니다.
-> 임베딩 모델이나 30B-A3B를 함께 상주시켜 로컬 RAG를 붙일 여력이 충분합니다.
+| 계층 | 모델 | 상주 용량 | 근거 |
+|---|---|---|---|
+| **T0 MacBook 64GB** | Qwen3.8-27B abliterated MLX 4bit | ~15GB | 이동 중 자립. Flash-Next는 64GB에 안 들어감 |
+| ↳ 여유분 | + 임베딩 모델 (BGE-M3 등) | ~2GB | 오프라인 로컬 RAG. 가성비 최고 |
+| **T1 Mac Studio 96GB** | Qwen3.8-27B MLX 4bit — **상시** | ~15GB | [마이] 허브. 미덕은 크기가 아니라 즉응성 |
+| ↳ 온디맨드 | **Qwen3.8-Flash-Next MLX-Serve 4bit** | **~70GB** | ⭐ 플릿에서 **이 기기만** 실행 가능 |
+| **T2 Station A 192GB** | **Qwen3.8-27B AWQ ×8 replica** | GPU당 1개 | 실측 3090 1장 ~1,000 tok/s(64병렬) → **집계 ~8,000 tok/s** |
+| ↳ 대기 | Flash-Next INT4 TP=4 ×2 | ~70GB | ⏳ 커뮤니티 quant 출시 대기 |
+| **T2 Station B** | 파인튜닝(QLoRA) / 양자화 / 임베딩 인덱싱 | — | 서빙과 분리 |
+
+> **Flash-Next를 T1에 상시 상주시키지 마세요.** 70GB를 잡으면 27B 상시 모델과
+> LiteLLM 라우터가 같이 못 삽니다. 27B 상시 + Flash-Next 온디맨드가 정답입니다.
 
 자세한 GPU 실무는 `GPU-STATIONS.md`, 메모리 튜닝은 `MODEL-NOTES.md` 참조.
 
@@ -109,12 +112,13 @@ macstudio┼─ tailnet (WireGuard) ─┬─ station-a
 
 ## 7. 지금 당장의 병목 2가지
 
-### 7-1. Mac Studio 1TB 저장공간
-96GB 통합메모리에 1TB는 불균형합니다. 70B 4bit 하나가 40GB, 실험용 모델 몇 개면 금방 찹니다.
+### 7-1. Mac Studio 저장공간 — 외장 2TB로 해소됨
+내장 1TB는 96GB 통합메모리에 비해 불균형했으나, **외장 2TB SSD 연결로 해결**되었습니다.
 
-- **모델 원본은 Station B의 대용량 디스크에 보관**하고, Mac Studio에는 상주 모델 1~2개만 둡니다.
-- 또는 Thunderbolt 5 외장 NVMe 4TB를 붙이고 `MAI_HOME` 을 그쪽으로 지정합니다
-  (포터블 설계가 이미 이 경우를 지원합니다 — `ARCHITECTURE.md` 4절).
+- 모델 아카이브를 외장으로: `export HF_HOME=/Volumes/<외장>/hf-cache`
+- **다만 인터페이스 속도가 첫 로드 시간에 직결**됩니다(70GB 모델 기준 TB5 약 15초 vs
+  USB 10Gbps 1분 이상). 통합메모리에 올라간 뒤에는 무관합니다.
+- ⚠️ **상시 운영 중 외장 SSD를 뽑지 마세요.** mmap 참조 중이면 프로세스가 즉사합니다.
 
 ### 7-2. 전력과 발열
 3090 ×16 = 최대 5.6kW. **사무실 일반 콘센트로는 불가능합니다.**
