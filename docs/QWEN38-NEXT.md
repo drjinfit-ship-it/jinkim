@@ -26,82 +26,75 @@
 
 | 기기 | 가능? | 근거 |
 |---|---|---|
-| **Mac Studio M3 Ultra 96GB** | ✅ **가능 (단, 팩 선택 주의)** | MLX-Serve 4bit 팩 기준 상주 약 70GB |
-| MacBook M3 Max 64GB | ❌ 불가 | 최소 70GB 필요 > 64GB |
+| **Mac Studio M3 Ultra 96GB (28c/60c 바이닝)** | ✅ **가능, 여유 있음** | REAP-288 팩 기준 상주 **39GB** |
+| MacBook M3 Max 64GB | △ REAP-288이면 가능 | 39GB < 64GB. 단 [마이] 27B와 동시 상주는 빠듯 |
 | Station A/B (3090 ×8) | ⏳ **현재 불가** | 아래 4절 참조 |
 
 ## 3. Mac Studio — 어떤 팩을 받을 것인가 (가장 중요)
 
-**같은 "4bit"라도 용량이 40GB 넘게 차이 납니다. 잘못 받으면 안 올라갑니다.**
+> **2026-08-30 정정**: 초판에서 `MLX-Serve 4bit(~70GB)`를 권장했으나, 추가 조사 결과
+> **REAP 프루닝 팩과 MTPLX 팩이 더 우수**합니다. 또한 "메모리에 올라간 뒤 디스크 속도는
+> 무관"이라고 썼던 것은 **틀렸습니다** — 3-3절 참조.
 
-| HF 리포 | 디스크 | 상주 메모리 | 96GB에서 |
-|---|---|---|---|
-| `Vontra/Qwen3.8-Flash-Next-MLX-4bit` | **112 GB** | 112GB+ | ❌ **받지 마세요** |
-| `pipenetwork/...-MLX-mixed-4_8bit` | ~75GB급 | ~75GB | △ 매우 빠듯 |
-| **`ddalcu/Qwen3.8-Flash-Next-MLX-Serve-4bit`** | — | **~70 GB** | ✅ **권장** |
-| `ddalcu/...-MLX-Serve-mixed-4-8bit` | — | ~75 GB | △ 품질↑, 여유↓ |
-| `labhraighlep/...-MLX-Serve-4bit` | — | ~70 GB | ✅ 대안 |
+### 3-1. 팩 비교
 
-> `MLX-Serve` 팩이 51B N-gram 테이블을 지연 로딩/재양자화해 상주 메모리를 낮춘 빌드입니다.
-> **반드시 `MLX-Serve` 가 이름에 들어간 팩**을 받으세요. 일반 `MLX-4bit`는 112GB입니다.
->
-> 무검열 변형을 찾으신다면 `orcarouter/Qwen3.8-Flash-Next-Uncensored-MLX` 도 공개되어 있습니다.
-> 어느 가중치를 쓸지는 운영자 판단이며, 아래 세팅 절차는 동일하게 적용됩니다.
+| HF 리포 | 상주 메모리 | 디스크 | 품질 | 96GB에서 |
+|---|---|---|---|---|
+| `Vontra/...-MLX-4bit` | 112 GB | 112 GB | stock | ❌ **받지 마세요** |
+| `ddalcu/...-MLX-Serve-4bit` | ~70 GB | — | stock | △ 되지만 여유 없음 |
+| `pipenetwork/...-mixed-4_8bit` | ~75 GB | — | stock+ | △ 빠듯 |
+| **`sh0wie/...-REAP-288-MLX-4bit`** | **39 GB** | 68 GB | HumanEval **91.5%** (stock 93.9%) | ✅ **1순위** |
+| `sh0wie/...-REAP-384-MLX-4bit` | ~50GB급 | 80 GB | stock 대비 -1.8pt | ✅ 품질 우선 시 |
+| **`Youssofal/...-MTPLX-Optimized-Speed`** | n-gram 스트리밍 | — | stock + **1.7× 속도** | ✅ **속도 우선 시** |
+| `Youssofal/...-MTPLX-Bare-Speed` | 〃 | — | stock + 1.6× | ✅ |
 
-### 3-1. 메모리 예산 — 빠듯합니다
+### 3-2. REAP-288이 1순위인 이유
 
-```
-총 통합메모리          96 GB
-├─ 모델 상주          ~70 GB   (MLX-Serve 4bit)
-├─ KV 캐시 + 활성화    ~8 GB   (선형 어텐션 덕에 이 정도로 끝남)
-└─ 시스템 잔여        ~18 GB
-```
+REAP(Router-weighted Expert Activation Pruning)로 **MoE 전문가를 512 → 288개로 가지치기**한
+빌드입니다. 스톡 q4 대비 **60% 작고 상주 39GB**인데, HumanEval은 91.5% vs 93.9% —
+**2.4포인트 손실로 용량을 60% 줄였습니다.**
 
-wired limit을 반드시 올려야 합니다.
+96GB에서 39GB만 쓴다는 것의 의미:
+- **[마이] 상시 27B(~15GB)와 Flash-Next를 동시에 상주**시킬 수 있습니다 (39+15=54GB).
+- LiteLLM 라우터, 임베딩 모델까지 얹을 여유가 남습니다.
+- 70GB짜리를 쓰면 이게 전부 불가능합니다. `FLEET.md` 6절의 "상시 vs 온디맨드" 고민이
+  **REAP-288을 쓰면 아예 사라집니다.**
+
+### 3-3. ⚠️ n-gram 테이블은 SSD에서 스트리밍됩니다 — 정정
+
+MTPLX 계열 팩은 **32GB짜리 N-gram 임베딩 테이블을 메모리에 올리지 않고 SSD에서 스트리밍**합니다.
+그래서 96GB Mac에 여유 있게 들어가는 것입니다. 가중치만 상주하고 테이블은 상주하지 않습니다.
+
+**결과: 외장 SSD 속도가 첫 로드뿐 아니라 추론 내내 영향을 줍니다.**
+초판에서 "메모리에 올라간 뒤에는 디스크 속도 무관"이라고 쓴 것은 이 팩들에는 해당되지 않습니다.
+
+- 외장 2TB가 **Thunderbolt 4/5**인지 반드시 확인하세요. USB 10Gbps면 토큰 속도가 눌립니다.
+- 가능하면 **n-gram 테이블은 내장 1TB SSD**에, 나머지 아카이브를 외장에 두는 편이 안전합니다.
+- REAP 팩(디스크 68GB)은 내장 1TB에 충분히 들어갑니다.
+
+### 3-4. wired limit
+
+REAP-288(39GB) 기준이면 상향이 **불필요**합니다. 70GB급 팩을 쓸 때만 올리세요.
 
 ```bash
-# Mac Studio 96GB — 88GB 까지 GPU wired 허용
-sudo sysctl iogpu.wired_limit_mb=90112
-
-# 확인
-sysctl iogpu.wired_limit_mb
+# 70GB급 팩을 쓸 경우에만
+sudo sysctl iogpu.wired_limit_mb=90112   # 88GB, 안전 상한선
 ```
 
-⚠️ **시스템 잔여가 8GB 아래로 떨어지면 커널 패닉**입니다. 90112(88GB)가 안전 상한선입니다.
-재부팅하면 초기화되니 상시 운영하려면 LaunchDaemon으로 등록하세요.
-
-### 3-2. 설치·실행
+### 3-5. 설치·실행
 
 ```bash
-# 최신 mlx-lm / mlx-vlm (멀티모달을 쓰려면 mlx-vlm)
 pip install -U mlx-lm mlx-vlm
 
-# 모델은 외장 2TB SSD에 (내장 1TB를 아끼기 위해)
-export HF_HOME=/Volumes/<외장SSD>/hf-cache
+# 모델 캐시 위치 — n-gram 스트리밍을 감안해 가급적 내장 SSD
+export HF_HOME=~/hf-cache          # 또는 TB4/5 외장
 
-# 다운로드 + 실행
-mlx_lm.generate \
-  --model ddalcu/Qwen3.8-Flash-Next-MLX-Serve-4bit \
-  --prompt "안녕, 마이." \
-  --max-tokens 512
-
-# OpenAI 호환 서버로 상시화 (LiteLLM이 여기에 붙습니다)
 mlx_lm.server \
-  --model ddalcu/Qwen3.8-Flash-Next-MLX-Serve-4bit \
+  --model sh0wie/Qwen3.8-Flash-Next-REAP-288-MLX-4bit \
   --host 127.0.0.1 --port 11434
 ```
 
-### 3-3. 외장 SSD 주의점
-
-외장 2TB에 두는 것은 맞는 선택입니다(내장 1TB에 70GB는 부담). 다만:
-
-- **첫 로드 시간이 인터페이스 속도에 직결**됩니다. 70GB 기준:
-  - Thunderbolt 5 (~6GB/s 실효) → 약 15초
-  - Thunderbolt 3/4 (~2.5GB/s) → 약 30초
-  - USB 10Gbps (~1GB/s) → **약 1분 이상**
-- **한 번 통합메모리에 올라간 뒤에는 디스크 속도가 무관**합니다. 상시 상주시키면 문제 없습니다.
-- 상시 운영 중 **외장 SSD를 뽑지 마세요.** MLX가 mmap으로 가중치를 참조하는 경우
-  프로세스가 즉사합니다. 외장 상주 시 `MAI_HOME` 마운트 감시가 필요합니다.
+MTPLX 팩은 자체 서버(`mtplx serve`)를 씁니다 — [MTPLX 리포](https://github.com/youssofal/MTPLX) 참조.
 
 ## 4. GPU 스테이션 — 지금은 못 돌립니다
 
@@ -169,24 +162,143 @@ INT4 quant이 나오는 대로 Flash-Next를 TP=4 × 2 replica로 재검토합�
 오픈 프레임 + 라이저 길이 설계를 미리 도면으로 확인해야 합니다.
 일반 케이스에 8장 + NVLink 4페어는 사실상 불가능합니다.
 
-## 6. 최종 배치안
+## 6. 27B와 무엇이 다른가 — 벤치마크와 근거
 
-| 계층 | 모델 | 상태 |
+### 6-1. 공식 벤치마크: Flash-Next가 18개 전 항목 승
+
+두 모델 모두 공개된 18개 벤치마크에서 **Flash-Next가 전부 이겼습니다.**
+(Agents' Last Exam, AndroidWorld, CharXiv-R, ClawEval-MM, CoWorkBench, DeepSWE 1.1,
+ERQA, GPQA, HLE, IFBench, Job Bench, LiveCodeBench v6, MathVision, NL2Repo,
+RealWorldQA, RecreationBench, SWE-Bench Pro, Vision2Web)
+
+| 항목 | Qwen3.8-27B | Flash-Next | 차이 |
+|---|---|---|---|
+| MathVision | 94.6% | 95.7% | **+1.1** |
+| LiveCodeBench v6 | 90.3% | 91.9% | **+1.6** |
+| GPQA | 89.2% | 91.7% | **+2.5** |
+
+**그런데 차이가 1~2.5 포인트입니다.** 파라미터가 4.6배(27B→125B)인데 벤치마크는
+2포인트 남짓 오릅니다. 이게 이 모델을 이해하는 핵심입니다.
+
+### 6-2. ⚠️ 숫자의 신뢰도가 대칭이 아닙니다
+
+**Flash-Next 수치는 전부 알리바바 자체 발표이며 제3자 재현이 없습니다.**
+반면 27B는 독립 검증 결과가 있습니다 — 휴먼 프리퍼런스 아레나 순위,
+제3자 처리량 실측 등. 프리뷰 모델은 이걸 갖고 있지 않습니다.
+
+사전학습 벤치마크(Base 모델)를 보면 그림이 더 정직합니다:
+**Flash-Next-Base는 14개 중 8개만 이깁니다.** 즉 6개는 27B가 앞섭니다.
+"전 항목 승"은 사후학습(instruct) 단계 수치이고, 원시 능력 격차는 그보다 작습니다.
+
+### 6-3. 유저 평가 — 표본이 매우 얇습니다
+
+공개 4일차라 커뮤니티 반응은 아직 형성 중입니다. 확인된 것:
+
+- **SGLang이 day-0 지원**, vLLM도 공식 레시피 제공 → 인프라 채택은 빠름
+- **llama.cpp 지원 요청 이슈만 등록된 상태**(#27741) — GGUF 경로는 아직 없음
+- MLX 커뮤니티가 가장 빠르게 움직여 REAP 프루닝, MTPLX 등 파생 빌드 다수 등장
+- 가격 경쟁력 보고: **SWE-bench Pro 62.5 vs DeepSeek V4 Pro 55.4, $0.15/M 토큰**
+- **부정적 품질 보고는 아직 눈에 띄지 않음** — 다만 이건 "좋다"가 아니라
+  "판단할 표본이 없다"에 가깝습니다.
+
+### 6-4. 그래서 실제로 뭐가 다를 것인가 — 예측과 근거
+
+> 아래는 아키텍처와 공개 수치로부터의 **추론**입니다. 실측이 아닙니다.
+
+| 축 | 예상 | 근거 |
 |---|---|---|
-| **T1 Mac Studio 96GB** | **Qwen3.8-Flash-Next MLX-Serve 4bit (~70GB)** | ✅ 지금 도입 — 온디맨드 |
-| T1 Mac Studio (상시) | Qwen3.8-27B MLX 4bit (~15GB) | ✅ [마이] 상시 허브 |
-| **T0 MacBook 64GB** | Qwen3.8-27B abliterated MLX 4bit | ✅ 현행 유지 (Flash-Next 불가) |
-| **T2 Station A** | Qwen3.8-27B AWQ ×8 replica (~8,000 tok/s) | ✅ 스테이션 완성 시 |
-| T2 Station A (장래) | Flash-Next INT4, TP=4 ×2 | ⏳ quant 출시 대기 |
+| **일반 대화·지식** | **체감 차이 작음** | 벤치 격차 1~2.5pt. Base는 6개 항목에서 27B가 우세 |
+| **에이전트/툴 사용** | **Flash-Next 우위 뚜렷** | 우위가 큰 항목이 Agents' Last Exam, AndroidWorld, CoWorkBench, DeepSWE, SWE-Bench Pro 등 **에이전트 벤치에 몰려 있음**. 초희소 MoE는 전문가 수가 많아 도메인 분화에 유리 |
+| **긴 컨텍스트** | **Flash-Next 압도** | 3/4 레이어가 Gated DeltaNet(선형) → KV가 상수 상태로 압축. 27B 밀집 모델은 컨텍스트에 비례해 KV가 증가. 262K에서 격차가 벌어짐 |
+| **멀티모달** | **Flash-Next만 가능** | 27B는 텍스트. Flash-Next는 이미지·비디오 입력 |
+| **정형 패턴·코드 관용구** | **Flash-Next 유리** | 51B N-gram 임베딩이 "현재 토큰 + 직전 몇 토큰"으로 조회하는 **로컬 패턴 메모리**. 상용구·API 시그니처 같은 반복 패턴에 강함 |
+| **토큰 속도(단일)** | **27B가 더 빠를 가능성** | 6-5절 참조 |
+| **응답 안정성** | **27B 우위** | 프리뷰 모델 + 신규 아키텍처. 27B는 독립 검증과 아레나 실적 보유 |
 
-### Mac Studio 상시 vs 온디맨드 — 판단이 필요합니다
+**한 줄 요약**: **"27B를 대체하는 모델이 아니라, 에이전트·롱컨텍스트·멀티모달을
+담당하는 다른 도구"** 입니다. 일상 대화 품질로 갈아탈 이유는 근거가 약합니다.
 
-Flash-Next를 **상시 상주**시키면 70GB를 잡아 **다른 모델을 동시에 못 올립니다.**
-LiteLLM 라우터와 27B 상시 모델이 같이 못 삽니다.
+## 6-5. Mac Studio 토큰 속도 예상
 
-**권장: 27B를 상시(~15GB), Flash-Next를 온디맨드.**
-[마이] 허브의 미덕은 크기가 아니라 즉응성이고, 무거운 질의는 라우터가
-Flash-Next 또는 Station A로 넘기면 됩니다. Station A가 가동되면 재검토하세요.
+### 전제: 이 맥 스튜디오는 28코어/60코어 바이닝 버전입니다
+
+이게 **일반적인 직관과 반대로 중요합니다.**
+
+- 메모리 대역폭은 바이닝과 무관 — **약 800GB/s 그대로**입니다.
+- **GPU 코어는 60/80 = 75%** 입니다.
+- 그리고 **초희소 MoE에서는 대역폭이 아니라 GPU 연산·메모리 레이턴시가 병목**입니다.
+
+결정적 근거: 실측 보고에서 **Qwen3-Next-80B(3B 활성) 기준 M4 Pro 52.3 tok/s가
+M3 Ultra 49.1 tok/s를 앞섰습니다.** 대역폭이 3배인 Ultra가 진 겁니다.
+MoE는 파라미터를 전부 읽지 않아 대역폭 병목이 먼저 풀리고, 그 다음엔 연산 효율과
+접근 레이턴시가 좌우하기 때문입니다.
+
+→ **Ultra의 800GB/s 강점이 이 모델에서는 대부분 낭비됩니다.
+   그리고 바이닝으로 깎인 GPU 코어는 정확히 병목 지점을 때립니다.**
+
+### 추정 계산
+
+| 앵커 | 값 | 출처 |
+|---|---|---|
+| Qwen3-Next-80B (3B 활성) on M3 Ultra | 49.1 tok/s | 실측 보고 |
+| Qwen 3.5 35B-A3B MLX 8bit on M3 Ultra 512GB | 80+ tok/s | 실측 보고 |
+| MTPLX 투기적 디코딩 배수 (Flash-Next) | **1.6~1.7×** | M5 Max 실측 |
+| MTP 수용률 | D3에서 ~32%로 감쇠 | MTPLX 문서 |
+
+Flash-Next는 **활성 6B로 Qwen3-Next-A3B의 2배**입니다. 다만 3/4 레이어가 선형
+어텐션이라 선형 비례로 절반이 되지는 않습니다.
+
+```
+기준점        Qwen3-Next-80B-A3B on M3 Ultra        ≈ 49 tok/s
+활성 2배      6B/3B, 선형 어텐션 보정               × 0.55~0.7   → 27~34
+바이닝 60코어 연산 병목 구간이라 직격              × 0.8~0.9    → 22~31
+REAP-288      전문가 512→288, 메모리 트래픽 감소   × 1.15~1.35  → 25~42
+MTP 투기 디코딩                                     × 1.6~1.7    → 40~70
+```
+
+### 결론
+
+| 구성 | 예상 tok/s (단일 스트림) |
+|---|---|
+| 스톡 4bit, MTP 없음 | **20~30** |
+| REAP-288 4bit, MTP 없음 | **25~40** |
+| **REAP-288 + MTPLX (권장)** | **40~65** |
+| MTPLX-Optimized-Speed (스톡 품질) | **35~55** |
+
+**중앙값 기대치는 REAP-288 + MTP 조합에서 약 45~55 tok/s** 입니다.
+읽는 속도(사람이 편하게 따라가는 속도가 대략 10~15 tok/s)의 3~4배이므로
+대화형으로는 충분히 쾌적합니다.
+
+### 이 추정을 빗나가게 할 요인
+
+1. **외장 SSD 인터페이스** — n-gram 테이블이 스트리밍되므로(3-3절),
+   USB 10Gbps면 여기서 크게 깎입니다. **TB4/5 확인이 최우선.**
+2. **컨텍스트 길이** — 선형 어텐션 덕에 감쇠가 완만하지만 0은 아닙니다.
+3. **MTP 수용률** — 코드처럼 예측 가능한 텍스트는 배수가 잘 나오고,
+   창의적 텍스트는 낮습니다. 1.6×는 상한에 가깝습니다.
+4. **M5 Max 기준 배수를 M3 Ultra에 적용한 것** — 세대가 달라 오차 요인입니다.
+
+**실측이 최선입니다.** 아래로 30분이면 확인됩니다.
+
+```bash
+mlx_lm.generate --model sh0wie/Qwen3.8-Flash-Next-REAP-288-MLX-4bit \
+  --prompt "파이썬으로 이진탐색 트리를 구현하고 설명해줘" \
+  --max-tokens 1024 --verbose
+# 출력 끝에 generation tok/s 가 찍힙니다
+```
+
+## 6-6. 최종 배치안 (개정)
+
+| 계층 | 모델 | 상주 | 상태 |
+|---|---|---|---|
+| **T1 Mac Studio 96GB** | **Flash-Next REAP-288 MLX 4bit** | 39GB | ✅ **상시 상주 가능** |
+| T1 Mac Studio | + Qwen3.8-27B MLX 4bit | 15GB | ✅ 빠른 응답용. 둘 다 올라감(54GB) |
+| **T0 MacBook 64GB** | Qwen3.8-27B abliterated (현행) | 15GB | ✅ 유지. REAP-288도 선택지 |
+| **T2 Station A** | Qwen3.8-27B AWQ ×8 replica | — | ✅ 집계 ~8,000 tok/s |
+
+> **초판의 "상시 vs 온디맨드" 고민은 REAP-288(39GB)로 해소됩니다.**
+> 27B와 Flash-Next를 동시에 상주시키고 LiteLLM이 질의 성격에 따라 나눠 보내면 됩니다.
+> 빠른 대화는 27B, 에이전트·롱컨텍스트·이미지는 Flash-Next.
 
 ## 7. 신규 아키텍처 리스크
 
@@ -212,3 +324,14 @@ Flash-Next 또는 Station A로 넘기면 됩니다. Station A가 가동되면 �
 - [syv-ai/qwen38-27b-rtx3090 — 단일 3090 vLLM 실측 보고](https://github.com/syv-ai/qwen38-27b-rtx3090)
 - [Qwen 3.8 27B Hardware Guide: From the RTX 3090 to the DGX Spark — Context Studios](https://www.contextstudios.ai/blog/qwen-3-8-27b-hardware-guide)
 - [Running Qwen3.8-27B on Dual RTX 3090s: A vLLM Field Report](https://derekarmstrong.dev/blog/running-qwen38-27b-dual-rtx-3090-vllm-v026/)
+- [Qwen3.8-27B vs Qwen3.8-Flash-Next: Benchmarks, Pricing & Which Is Better — llm-stats](https://llm-stats.com/models/compare/qwen3.8-27b-vs-qwen3.8-flash-next)
+- [Qwen3.8-Flash-Next vs Qwen3.8-27B: which open Qwen to run? — orcarouter](https://www.orcarouter.ai/blog/qwen-3-8-next-vs-qwen-3-8)
+- [Qwen3.8 Flash Next Review: Benchmarks, Architecture, Memory — The Kaitchup](https://kaitchup.substack.com/p/qwen38-flash-next-review-benchmarks)
+- [Qwen3.8-Flash-Next: Day-0 Support in SGLang — LMSYS](https://www.lmsys.org/blog/2026-08-26-qwen-flash-next)
+- [Feature Request: Qwen3.8-Flash-Next support — llama.cpp #27741](https://github.com/ggml-org/llama.cpp/issues/27741)
+- [sh0wie/Qwen3.8-Flash-Next-REAP-288-MLX-4bit — Hugging Face](https://huggingface.co/sh0wie/Qwen3.8-Flash-Next-REAP-288-MLX-4bit)
+- [youssofal/MTPLX — Native MTP Speculative Decoding on Apple Silicon](https://github.com/youssofal/MTPLX)
+- [Youssofal/Qwen3.8-Flash-Next-MTPLX-Optimized-Speed — Hugging Face](https://huggingface.co/Youssofal/Qwen3.8-Flash-Next-MTPLX-Optimized-Speed)
+- [Silicon Showdown: Consumer-Grade LLM Inference — arXiv](https://arxiv.org/pdf/2605.00519)
+- [Systematic inference benchmarks on M3 Ultra — mlx discussion #3209](https://github.com/ml-explore/mlx/discussions/3209)
+- [Mac Studio M3 Ultra 96GB 28/60 LLM Performance — MacRumors](https://forums.macrumors.com/threads/mac-studio-m3-ultra-96gb-28-60-llm-performance.2456559/)
