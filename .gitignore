@@ -1,0 +1,16 @@
+# 모델 가중치 — 용량이 커서 절대 추적하지 않음
+models/
+*.gguf
+*.safetensors
+*.bin
+
+# 로컬 전용 설정 / 런타임 상태
+mai/config/mai.env
+logs/
+runtime/
+*.pid
+
+# 개인 기억 (필요 시 이 줄을 지우고 추적)
+mai/memory/
+
+.DS_Store
