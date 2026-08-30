@@ -146,5 +146,8 @@ echo "_생성: scripts/01-inspect-mac.sh_" >> "$OUT"
 
 echo "✅ 리포트 생성 완료: $OUT"
 echo
-echo "다음 단계:"
-echo "  git add reports/ && git commit -m 'chore: 맥북 진단 리포트' && git push"
+echo "⚠️  이 리포트에는 홈 폴더 구조가 담겨 있습니다."
+echo "    public 저장소에 커밋하지 마세요 (.gitignore 처리됨)."
+echo
+echo "다음 단계: 내용을 확인 후 채팅에 붙여넣거나 private 저장소로 옮기세요."
+echo "  less \"$OUT\""

@@ -10,7 +10,10 @@ logs/
 runtime/
 *.pid
 
-# 개인 기억 (필요 시 이 줄을 지우고 추적)
+# ⚠️ 이 저장소는 PUBLIC 입니다.
+# 개인 기억과 진단 리포트는 여기 올리지 않습니다.
+# 2대 동기화는 별도 PRIVATE 저장소로 처리합니다 (docs/TWO-MACHINE.md 4절).
 mai/memory/
+reports/*.md
 
 .DS_Store
