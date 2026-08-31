@@ -1,18 +1,26 @@
 """전사 — 오디오를 화자 라벨이 붙은 세그먼트 JSONL로 만든다.
 
+Mac Studio에서 상시 저전력으로 돈다 (docs/AUTOMATION.md 2-2절).
+
 ⚠️ Phase 1의 전부다. 여기 품질이 안 나오면 상위 단계는 전부 무의미하다.
 2주간은 이 단계만 돌리며 config/vocab.txt 를 채우는 데 집중하라.
 
-백엔드는 교체 가능하다:
-  MAI_STT_BACKEND=faster-whisper  (기본, Station B의 3090)
-  MAI_STT_BACKEND=mlx-whisper     (맥 로컬, 오프라인)
+⚠️ 구현 선택이 하드웨어보다 중요하다. 같은 M3 Ultra에서 20배 차이 난다:
+    mlx-whisper large-v3   2~3x 실시간  → 8시간에 3시간+  ❌
+    large-v3-turbo MLX     9.1x         → 53분
+    coreml (ANE)           22x          → 22분   ★ GPU 비경합
+    whisperx-mlx           최대 52x     → 9분    ★ 최속
+
+  ANE 경로는 Neural Engine을 쓰므로 GPU에 상주한 LLM과 경합하지 않는다.
+  상시 운영에는 coreml 또는 whisperx-mlx 를 쓸 것.
 """
 from __future__ import annotations
 import datetime as dt, os, pathlib, subprocess, sys
 from common import INBOX, MAI_HOME, TRANSCRIPT, append_jsonl
 
-BACKEND   = os.environ.get("MAI_STT_BACKEND", "faster-whisper")
+BACKEND   = os.environ.get("MAI_STT_BACKEND", "whisperx-mlx")
 MODEL     = os.environ.get("MAI_STT_MODEL", "large-v3")
+DIARIZE   = os.environ.get("MAI_DIARIZE_DEVICE", "mps")   # mps | cpu
 VOCAB     = MAI_HOME / "config" / "vocab.txt"
 SEG_SEC   = int(os.environ.get("MAI_SEGMENT_SEC", "300"))   # 5분 단위
 
@@ -30,17 +38,26 @@ def transcribe(audio: pathlib.Path) -> list[dict]:
     """오디오 한 파일 → 세그먼트 리스트.
 
     TODO(Phase 1): 아래를 실제 백엔드 호출로 채운다.
-      faster-whisper:
-        model = WhisperModel(MODEL, device="cuda", compute_type="float16")
-        segs, _ = model.transcribe(str(audio), language="ko",
-                                   initial_prompt=initial_prompt(),
-                                   vad_filter=True, word_timestamps=True)
-      화자분리:
-        pyannote.audio Pipeline 으로 diarization 후 타임스탬프 교차 매칭
+
+      whisperx-mlx (권장, 최대 52x):
+        import whisperx_mlx
+        result = whisperx_mlx.transcribe(str(audio), model=MODEL, language="ko",
+                                         initial_prompt=initial_prompt())
+
+      coreml / ANE (GPU 비경합, 22x):
+        Core ML 변환 모델을 ANE로 dispatch. GPU에 상주한 LLM과 경합하지 않는다.
+
+      화자분리 (pyannote 3.1 — onnxruntime 제거되어 MPS 정상 동작):
+        from pyannote.audio import Pipeline
+        dia = Pipeline.from_pretrained("pyannote/speaker-diarization-3.1")
+        dia.to(torch.device(DIARIZE))        # mps: CPU 대비 약 9배 빠름
+        turns = dia(str(audio))
+        # turns 의 화자 구간과 whisper 타임스탬프를 교차 매칭해 speaker 라벨 부여
     """
     raise NotImplementedError(
         "STT 백엔드를 연결하세요. docs/AUTOMATION.md 2-2절 참조.\n"
-        f"  backend={BACKEND} model={MODEL} vocab={'있음' if VOCAB.exists() else '없음'}"
+        f"  backend={BACKEND} model={MODEL} diarize={DIARIZE} "
+        f"vocab={'있음' if VOCAB.exists() else '없음'}"
     )
 
 
