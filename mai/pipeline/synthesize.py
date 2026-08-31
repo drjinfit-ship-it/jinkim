@@ -1,6 +1,7 @@
 """2차 종합 — 하루치를 한 컨텍스트에 넣고 서사·모순·의견을 만든다.
 
-Mac Studio의 Flash-Next(262K 컨텍스트)를 쓴다. 세그먼트 요약만으로는
+Mac Studio의 27B(262K 컨텍스트)를 쓴다. 27B도 64층 중 48층이 Gated
+DeltaNet 선형 어텐션이라 KV가 상수 상태로 압축된다. 세그먼트 요약만으로는
 보이지 않는 것 — 오전과 오후의 모순, 반복되는 미해결 — 이 여기서 잡힌다.
 
 주의: 10만 토큰 prefill은 수 분 걸린다. 실시간이 아니라 마감 배치로 돌린다.
@@ -48,7 +49,7 @@ def run(date: str) -> dict:
     prompt = TEMPLATE.format(date=date, n=len(rows), payload=payload)
 
     print(f"종합 중… 세그먼트 {len(rows)}개, 약 {len(payload)//3:,} 토큰 (수 분 소요)")
-    result = parse_json(chat(prompt, model="mai-big", system=SYSTEM,
+    result = parse_json(chat(prompt, model="mai", system=SYSTEM,
                              temperature=0.3, max_tokens=8192, timeout=1800))
 
     out = SYNTH / f"{date}.json"

@@ -15,41 +15,49 @@
 
 model_list:
   # ── T1: Mac Studio 로컬 (기본 [마이]) ─────────────────
+  #     27B 인스턴스를 2~3개 띄우고 라운드로빈 (QWEN38-NEXT.md 6-6절)
+  #     ⚠️ Ollama 금지 — M3 Ultra에서 14 tok/s. oMLX + MTP 경로를 쓸 것
   - model_name: mai
     litellm_params:
-      model: openai/qwen3-32b
+      model: openai/qwen3.8-27b
       api_base: http://127.0.0.1:11434/v1
       api_key: "none"
     model_info:
-      description: "상시 비서. 지연 최소. Mac Studio M3 Ultra 로컬"
+      description: "상시 비서. 262K 컨텍스트, 네이티브 VLM. Mac Studio 로컬"
+  - model_name: mai
+    litellm_params:
+      model: openai/qwen3.8-27b
+      api_base: http://127.0.0.1:11435/v1
+      api_key: "none"
 
   # ── T0: MacBook 로컬 (이동 중 폴백) ───────────────────
   - model_name: mai-mobile
     litellm_params:
-      model: openai/qwen3-27b-abliterated-mlx
+      model: openai/qwen3.8-27b-abliterated-mlx
       api_base: http://macbook.TAILNET.ts.net:11434/v1
       api_key: "none"
 
-  # ── T2: Station A — 대형 모델 (품질 우선) ─────────────
-  - model_name: mai-big
+  # ── T1: Flash-Next — 에이전트 워크로드 A/B 전용 (온디맨드) ──
+  #     상시 상주시키지 않는다. 27B와 실제 업무 프롬프트로 비교한 뒤 판단.
+  - model_name: mai-next
     litellm_params:
-      model: openai/qwen3-235b-a22b-awq
-      api_base: http://station-a.TAILNET.ts.net:8000/v1
+      model: openai/qwen3.8-flash-next-reap-288
+      api_base: http://127.0.0.1:11436/v1
       api_key: "none"
     model_info:
-      description: "8×3090 TP=8. 난이도 높은 로컬 작업"
+      description: "에이전트·툴 사용 A/B용. 미기동 시 mai 로 폴백"
 
   # ── T2: Station A — 배치 처리 (처리량 우선) ───────────
-  #     32B AWQ를 TP=2 × 4 replica 로 띄우고 라운드로빈
+  #     27B AWQ를 GPU 1장당 1 replica 로 8개 띄우고 라운드로빈
   - model_name: mai-batch
     litellm_params:
-      model: openai/qwen3-32b-awq
+      model: openai/qwen3.8-27b-awq
       api_base: http://station-a.TAILNET.ts.net:8001/v1
       api_key: "none"
     rpm: 600
   - model_name: mai-batch
     litellm_params:
-      model: openai/qwen3-32b-awq
+      model: openai/qwen3.8-27b-awq
       api_base: http://station-a.TAILNET.ts.net:8002/v1
       api_key: "none"
     rpm: 600
@@ -67,8 +75,8 @@ router_settings:
   timeout: 600
   # 스테이션이 꺼져 있으면 즉시 로컬로 폴백 — 이게 자립성의 핵심
   fallbacks:
-    - mai-big: ["mai", "mai-mobile"]
-    - mai-batch: ["mai-big", "mai"]
+    - mai-next: ["mai", "mai-mobile"]
+    - mai-batch: ["mai", "mai-mobile"]
     - mai: ["mai-mobile"]
   allowed_fails: 2
   cooldown_time: 60

@@ -24,7 +24,7 @@
              ↓ 세그먼트 JSONL (타임스탬프 + 화자)   ★ 상시 저전력, GPU 비경합
 [3 추출]  Station A — 27B ×8 replica, 세그먼트 병렬
              ↓ 구조화 JSON: 결정/액션/약속/질문/리스크/톤
-[4 종합]  Mac Studio — Flash-Next 262K 컨텍스트
+[4 종합]  Mac Studio — 27B 262K 컨텍스트 (하이브리드 선형 어텐션)
              ↓ 하루의 서사, 모순, 놓친 것, 의견
 [5 실행]  ★ "절반 먼저" — 가역성 게이트로 분류 후 자동 수행
              ↓
@@ -53,7 +53,7 @@ $MAI_HOME/inbox/audio/     ← 여기에 파일이 떨어지면 파이프라인 
 **용량**: Opus 24kbps로 인코딩하면 8시간/일 ≈ **86MB/일 ≈ 31GB/년**.
 무손실(16bit/16kHz mono)로 보관해도 연 168GB입니다.
 **총 3TB(내장 1TB + 외장 2TB)에서 오디오는 전혀 문제가 아닙니다** —
-진짜 용량을 먹는 건 모델입니다(Flash-Next REAP-288만 68GB).
+진짜 용량을 먹는 건 모델입니다(27B 15GB, Flash-Next REAP-288 68GB).
 
 ⚠️ **녹음 고지**: 본인이 참여한 대화 녹음은 합법이지만, 상대가 있는 자리라면
 고지하는 편이 안전합니다. 업무 성격상 민감정보(의료·개인정보)가 섞인다면
@@ -91,14 +91,14 @@ $MAI_HOME/inbox/audio/     ← 여기에 파일이 떨어지면 파이프라인 
 
 #### ★ Neural Engine을 쓰면 LLM과 경합하지 않습니다
 
-Mac Studio의 GPU는 이미 Flash-Next(39GB) + 27B(15GB)가 점유하고 있습니다.
+Mac Studio의 GPU는 [마이] 27B 인스턴스들이 점유합니다(`QWEN38-NEXT.md` 6-6절).
 STT까지 GPU를 쓰면 전사 중에 [마이] 응답이 느려집니다.
 
 **Core ML로 Neural Engine(ANE)에 dispatch하면 GPU를 건드리지 않습니다.**
 그리고 ANE는 GPU보다 훨씬 저전력입니다. 이게 "상시 저전력"의 진짜 답입니다.
 
 ```
-GPU  →  Flash-Next + 27B (LLM 추론)      ← 경합 없음
+GPU  →  Qwen3.8-27B ×2~3 (LLM 추론)      ← 경합 없음
 ANE  →  Whisper 전사                      ↙
 CPU  →  pyannote 화자분리 (또는 MPS)
 ```
@@ -106,12 +106,13 @@ CPU  →  pyannote 화자분리 (또는 MPS)
 #### 메모리 예산 (96GB)
 
 ```
-Flash-Next REAP-288   39 GB
-27B 상시               15 GB
+27B ×2 인스턴스       30 GB     (병렬 추출용)
+임베딩 + 리랭커         3 GB
 Whisper large-v3        3 GB
 pyannote                1 GB
 ─────────────────────────────
-합계                  ~58 GB / 96 GB   → 여유 38GB
+합계                  ~37 GB / 96 GB   → 여유 59GB
+                                        (Flash-Next 39GB를 얹어도 76GB)
 ```
 
 #### 화자분리
@@ -162,10 +163,11 @@ pipeline.to(torch.device("mps"))   # 또는 "cpu"
 
 `type`과 `reversible`이 5단계 실행 계층의 입력이 됩니다.
 
-### 2-4. 2차 종합 — Flash-Next의 존재 이유
+### 2-4. 2차 종합 — 하루치를 한 컨텍스트에
 
-하루 8시간 녹음 ≈ **8만~12만 토큰**. Flash-Next의 262K 컨텍스트에 **하루치가 통째로 들어갑니다.**
-이게 `QWEN38-NEXT.md`에서 "27B의 대체재가 아니라 롱컨텍스트 담당"이라고 한 이유입니다.
+하루 8시간 녹음 ≈ **8만~12만 토큰**. **27B의 262K 컨텍스트에 하루치가 통째로 들어갑니다.**
+27B도 64층 중 48층이 Gated DeltaNet(선형 어텐션)이라 KV가 상수 상태로 압축됩니다 —
+롱컨텍스트를 위해 Flash-Next가 필요하지 않습니다 (`QWEN38-NEXT.md` 6-4절).
 
 세그먼트별 요약만 봐서는 알 수 없는 것들을 여기서 잡습니다:
 - **모순**: 오전에 A라고 했는데 오후에 B라고 함
@@ -205,7 +207,7 @@ pipeline.to(torch.device("mps"))   # 또는 "cpu"
 | type | 실행 주체 | 산출물 |
 |---|---|---|
 | `code` | **Claude Code** (worktree 격리) | 브랜치 + 커밋 + 테스트 통과 상태 |
-| `doc` | 로컬 Flash-Next | 초안 마크다운 |
+| `doc` | 로컬 27B | 초안 마크다운 |
 | `research` | 로컬 + 웹 검색 | 조사 노트 + 출처 |
 | `contact` | 로컬 27B | **초안만.** 발송 절대 금지 |
 | `schedule` | 캘린더 읽기 | 가능 시간 후보 목록 |

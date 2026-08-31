@@ -201,22 +201,43 @@ RealWorldQA, RecreationBench, SWE-Bench Pro, Vision2Web)
 - **부정적 품질 보고는 아직 눈에 띄지 않음** — 다만 이건 "좋다"가 아니라
   "판단할 표본이 없다"에 가깝습니다.
 
-### 6-4. 그래서 실제로 뭐가 다를 것인가 — 예측과 근거
+### 6-4. ⚠️ 정정 — Qwen3.8-27B의 구조를 잘못 알고 있었습니다
 
-> 아래는 아키텍처와 공개 수치로부터의 **추론**입니다. 실측이 아닙니다.
+초판에서 27B를 "밀집 표준 어텐션 · 텍스트 전용"으로 전제했는데 **틀렸습니다.**
+확인된 실제 구조:
 
-| 축 | 예상 | 근거 |
+| | Qwen3.8-27B | Flash-Next |
 |---|---|---|
-| **일반 대화·지식** | **체감 차이 작음** | 벤치 격차 1~2.5pt. Base는 6개 항목에서 27B가 우세 |
-| **에이전트/툴 사용** | **Flash-Next 우위 뚜렷** | 우위가 큰 항목이 Agents' Last Exam, AndroidWorld, CoWorkBench, DeepSWE, SWE-Bench Pro 등 **에이전트 벤치에 몰려 있음**. 초희소 MoE는 전문가 수가 많아 도메인 분화에 유리 |
-| **긴 컨텍스트** | **Flash-Next 압도** | 3/4 레이어가 Gated DeltaNet(선형) → KV가 상수 상태로 압축. 27B 밀집 모델은 컨텍스트에 비례해 KV가 증가. 262K에서 격차가 벌어짐 |
-| **멀티모달** | **Flash-Next만 가능** | 27B는 텍스트. Flash-Next는 이미지·비디오 입력 |
-| **정형 패턴·코드 관용구** | **Flash-Next 유리** | 51B N-gram 임베딩이 "현재 토큰 + 직전 몇 토큰"으로 조회하는 **로컬 패턴 메모리**. 상용구·API 시그니처 같은 반복 패턴에 강함 |
-| **토큰 속도(단일)** | **27B가 더 빠를 가능성** | 6-5절 참조 |
-| **응답 안정성** | **27B 우위** | 프리뷰 모델 + 신규 아키텍처. 27B는 독립 검증과 아레나 실적 보유 |
+| 파라미터 | 27.78B **dense** | 125B MoE (활성 6B) |
+| **어텐션** | **64층 중 48층 Gated DeltaNet(선형) + 16층 full** | 48층 중 36층 선형 + 12층 sparse |
+| **컨텍스트** | **262,144 네이티브 → 1M (YaRN)** | 262,144 → 1M |
+| **멀티모달** | **네이티브 VLM — 이미지·다이어그램·문서·시간 단위 비디오** | 이미지·비디오 |
 
-**한 줄 요약**: **"27B를 대체하는 모델이 아니라, 에이전트·롱컨텍스트·멀티모달을
-담당하는 다른 도구"** 입니다. 일상 대화 품질로 갈아탈 이유는 근거가 약합니다.
+**즉 Flash-Next의 차별점이라고 봤던 두 축이 27B에도 그대로 있습니다.**
+
+초판 6-4절에서 다음 두 항목은 **철회합니다**:
+- ~~"긴 컨텍스트 — Flash-Next 압도. 27B는 밀집이라 KV가 컨텍스트에 비례 증가"~~
+  → 27B도 **48/64층이 선형 어텐션**이라 KV가 상수 상태로 압축됩니다. 컨텍스트도 동일한 262K.
+- ~~"멀티모달 — Flash-Next만 가능. 27B는 텍스트"~~
+  → 27B는 **네이티브 비전-언어 모델**입니다.
+
+Qwen3-Next가 도입한 하이브리드 Gated DeltaNet 구조가 Qwen3.5~3.8 전 계열에
+재사용되었기 때문입니다. 27B는 그 구조를 물려받은 dense 모델입니다.
+
+### 6-4b. 남은 실제 차이
+
+| 축 | 판단 | 근거 |
+|---|---|---|
+| 일반 대화·지식 | **체감 차이 작음** | 벤치 격차 1~2.5pt. Base는 6개 항목에서 27B 우세 |
+| **에이전트/툴 사용** | Flash-Next 소폭 우위 | 우위 항목이 Agents' Last Exam, AndroidWorld, DeepSWE, SWE-Bench Pro에 몰림 |
+| 정형 패턴·코드 관용구 | Flash-Next 유리 | 51B N-gram 로컬 패턴 메모리 |
+| 긴 컨텍스트 | **동급** | 둘 다 하이브리드 선형 어텐션, 262K |
+| 멀티모달 | **동급** | 둘 다 네이티브 VLM |
+| **응답 안정성** | **27B 우위** | 독립 검증·아레나 실적 보유 vs 공개 4일차 프리뷰 |
+| **이 맥에서의 속도** | **27B 유리** | 6-5절 — 바이닝된 60코어가 MoE를 때림 |
+
+**수정된 한 줄 요약**: 아키텍처 세대가 같고 컨텍스트·멀티모달도 같습니다.
+**남는 건 벤치 1~2.5pt와 에이전트 성향뿐이며, 그 수치는 자체 발표이고 재현되지 않았습니다.**
 
 ## 6-5. Mac Studio 토큰 속도 예상
 
@@ -287,18 +308,60 @@ mlx_lm.generate --model sh0wie/Qwen3.8-Flash-Next-REAP-288-MLX-4bit \
 # 출력 끝에 generation tok/s 가 찍힙니다
 ```
 
-## 6-6. 최종 배치안 (개정)
+## 6-6. 판단 — Mac Studio는 27B 단독으로 간다
+
+**결론: 27B 상시 단독. Flash-Next는 디스크에 두고 A/B 후 결정.**
+
+### 근거
+
+1. **아키텍처 이점이 동일합니다** (6-4절). 롱컨텍스트·멀티모달이 Flash-Next 전유물이 아닙니다.
+2. **이 하드웨어가 27B를 편듭니다.** 28c/60c 바이닝 M3 Ultra는 **대역폭(800GB/s)은 온전한데
+   GPU 코어가 25% 깎였습니다.** dense 27B는 대역폭을 쓰고, Flash-Next의 초희소 MoE는
+   연산·레이턴시에 의존합니다. 깎인 쪽이 정확히 MoE의 병목입니다.
+3. **남는 차이는 벤치 1~2.5pt** — 자체 발표, 제3자 미재현. 프롬프트 개선으로 뒤집히는 폭입니다.
+4. **메모리 81GB가 열립니다.** 15GB만 쓰면:
+   - **27B 인스턴스를 2~3개 병렬 상주** → 파이프라인 추출 처리량이 오히려 증가
+   - 임베딩 + 리랭커 상주 → 로컬 RAG
+   - Whisper·pyannote와 여유롭게 공존
+5. **맥북과 같은 모델**이 됩니다. abliterated MLX 빌드가 이미 검증되어 있고,
+   프롬프트를 한 벌만 관리하면 됩니다. 두 기기의 동작이 일치합니다.
+6. **디스크 15GB vs 68GB.**
+
+### ⚠️ 단, 런타임을 반드시 확인하세요 — 4배 차이입니다
+
+| 런타임 | Qwen3.8-27B 속도 |
+|---|---|
+| **Ollama (M3 Ultra 실측)** | **~14 tok/s** ❌ |
+| oMLX + native MTP (M4 Max 실측) | **48~65 tok/s** ✅ |
+
+Ollama의 Metal 커널이 새 하이브리드 어텐션을 아직 못 따라잡았습니다
+(같은 기계에서 구세대 Qwen3.6-27B는 28.6 tok/s). **Ollama로 쓰면 안 됩니다.**
+`oMLX` 또는 MTP 투기적 디코딩을 붙인 MLX 경로로 가세요.
+
+참고로 Qwen3.8은 같은 질문에 약 1,000토큰으로 답하고 3.6은 2,000~3,300토큰을 쓰므로,
+**완성 답변 기준 체감 시간은 tok/s 차이보다 작습니다.**
+
+### Flash-Next를 남겨둘 이유
+
+디스크 68GB는 3TB에서 부담이 아닙니다. 지워야 할 이유가 없습니다.
+
+- **에이전트 워크로드에서만 A/B**: 파이프라인 5단계(자동 실행)는 툴 사용이 많고,
+  Flash-Next의 우위가 몰려 있는 영역입니다. 실제 업무 프롬프트로 비교해 보세요.
+- 27B(15GB) + Flash-Next(39GB) = 54GB이므로 **필요할 때 27B를 내리지 않고도 동시에 올릴 수 있습니다.**
+- 판단은 벤치가 아니라 **본인 업무 프롬프트에서의 채택률**로 하세요.
+
+### 최종 배치
 
 | 계층 | 모델 | 상주 | 상태 |
 |---|---|---|---|
-| **T1 Mac Studio 96GB** | **Flash-Next REAP-288 MLX 4bit** | 39GB | ✅ **상시 상주 가능** |
-| T1 Mac Studio | + Qwen3.8-27B MLX 4bit | 15GB | ✅ 빠른 응답용. 둘 다 올라감(54GB) |
-| **T0 MacBook 64GB** | Qwen3.8-27B abliterated (현행) | 15GB | ✅ 유지. REAP-288도 선택지 |
-| **T2 Station A** | Qwen3.8-27B AWQ ×8 replica | — | ✅ 집계 ~8,000 tok/s |
+| **T1 Mac Studio 96GB** | **Qwen3.8-27B MLX 4bit ×2~3 인스턴스** | 30~45GB | ✅ **상시 단독** |
+| T1 (온디맨드) | Flash-Next REAP-288 | 39GB | 에이전트 A/B용 |
+| T1 (상주) | 임베딩 + 리랭커 | ~3GB | 로컬 RAG |
+| **T0 MacBook 64GB** | Qwen3.8-27B abliterated MLX 4bit | 15GB | ✅ 동일 모델 |
+| **T2 Station A** | Qwen3.8-27B AWQ ×8 replica | — | 집계 ~8,000 tok/s |
 
-> **초판의 "상시 vs 온디맨드" 고민은 REAP-288(39GB)로 해소됩니다.**
-> 27B와 Flash-Next를 동시에 상주시키고 LiteLLM이 질의 성격에 따라 나눠 보내면 됩니다.
-> 빠른 대화는 27B, 에이전트·롱컨텍스트·이미지는 Flash-Next.
+**전 계층이 같은 모델(27B)로 통일됩니다.** 프롬프트 한 벌, 동작 일관성,
+어느 계층으로 라우팅되든 같은 성격의 답. 운영 복잡도가 크게 내려갑니다.
 
 ## 7. 신규 아키텍처 리스크
 
@@ -324,6 +387,12 @@ mlx_lm.generate --model sh0wie/Qwen3.8-Flash-Next-REAP-288-MLX-4bit \
 - [syv-ai/qwen38-27b-rtx3090 — 단일 3090 vLLM 실측 보고](https://github.com/syv-ai/qwen38-27b-rtx3090)
 - [Qwen 3.8 27B Hardware Guide: From the RTX 3090 to the DGX Spark — Context Studios](https://www.contextstudios.ai/blog/qwen-3-8-27b-hardware-guide)
 - [Running Qwen3.8-27B on Dual RTX 3090s: A vLLM Field Report](https://derekarmstrong.dev/blog/running-qwen38-27b-dual-rtx-3090-vllm-v026/)
+- [Qwen3.8-27B Explained: Hybrid Attention, 262K Context — MindStudio](https://www.mindstudio.ai/blog/qwen3-8-27b-architecture-benchmarks)
+- [Qwen/Qwen3.8-27B — 27B · DENSE · 256K ctx — vLLM Recipes](https://recipes.vllm.ai/Qwen/Qwen3.8-27B)
+- [Qwen3.8-27B Turns a Desktop-Sized Model Into an Agent — NxCode](https://www.nxcode.io/resources/news/qwen3-8-27b-local-agent-model-2026)
+- [Weschera/Qwen3.8-27B-oMLX-MTP-Mac — 48~65 tok/s 실측](https://github.com/Weschera/Qwen3.8-27B-oMLX-MTP-Mac)
+- [Run Qwen3.8 27B locally: real numbers from my Mac Studio — TerminalBytes](https://terminalbytes.com/run-qwen-3-8-27b-locally/)
+- [Qwen3.8 27B on a Mac Studio: 14 tok/s, but faster per answer — Zeli](https://zeli.app/story/49479951)
 - [Qwen3.8-27B vs Qwen3.8-Flash-Next: Benchmarks, Pricing & Which Is Better — llm-stats](https://llm-stats.com/models/compare/qwen3.8-27b-vs-qwen3.8-flash-next)
 - [Qwen3.8-Flash-Next vs Qwen3.8-27B: which open Qwen to run? — orcarouter](https://www.orcarouter.ai/blog/qwen-3-8-next-vs-qwen-3-8)
 - [Qwen3.8 Flash Next Review: Benchmarks, Architecture, Memory — The Kaitchup](https://kaitchup.substack.com/p/qwen38-flash-next-review-benchmarks)

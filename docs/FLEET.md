@@ -40,16 +40,16 @@
 
 | 계층 | 모델 | 상주 용량 | 근거 |
 |---|---|---|---|
-| **T0 MacBook 64GB** | Qwen3.8-27B abliterated MLX 4bit | ~15GB | 이동 중 자립. Flash-Next는 64GB에 안 들어감 |
-| ↳ 여유분 | + 임베딩 모델 (BGE-M3 등) | ~2GB | 오프라인 로컬 RAG. 가성비 최고 |
-| **T1 Mac Studio 96GB** | Qwen3.8-27B MLX 4bit — **상시** | ~15GB | [마이] 허브. 미덕은 크기가 아니라 즉응성 |
-| ↳ 온디맨드 | **Qwen3.8-Flash-Next MLX-Serve 4bit** | **~70GB** | ⭐ 플릿에서 **이 기기만** 실행 가능 |
+| **T0 MacBook 64GB** | Qwen3.8-27B abliterated MLX 4bit | ~15GB | 이동 중 자립 |
+| ↳ 여유분 | + 임베딩 모델 (BGE-M3 등) | ~2GB | 오프라인 로컬 RAG |
+| **T1 Mac Studio 96GB** | **Qwen3.8-27B MLX 4bit ×2~3 인스턴스** | 30~45GB | ⭐ 상시. 262K 컨텍스트 + 네이티브 VLM |
+| ↳ 온디맨드 | Flash-Next REAP-288 | 39GB | 에이전트 워크로드 A/B용 |
 | **T2 Station A 192GB** | **Qwen3.8-27B AWQ ×8 replica** | GPU당 1개 | 실측 3090 1장 ~1,000 tok/s(64병렬) → **집계 ~8,000 tok/s** |
-| ↳ 대기 | Flash-Next INT4 TP=4 ×2 | ~70GB | ⏳ 커뮤니티 quant 출시 대기 |
-| **T2 Station B** | 파인튜닝(QLoRA) / 양자화 / 임베딩 인덱싱 | — | 서빙과 분리 |
+| **T2 Station B** | 파인튜닝 / 양자화 / 대량 백필 | — | 서빙과 분리 |
 
-> **Flash-Next를 T1에 상시 상주시키지 마세요.** 70GB를 잡으면 27B 상시 모델과
-> LiteLLM 라우터가 같이 못 삽니다. 27B 상시 + Flash-Next 온디맨드가 정답입니다.
+> **전 계층이 Qwen3.8-27B로 통일됩니다.** 프롬프트 한 벌, 동작 일관성,
+> 어느 계층으로 라우팅되든 같은 성격의 답이 나옵니다. 운영 복잡도가 크게 내려갑니다.
+> 판단 근거는 `QWEN38-NEXT.md` 6-6절.
 
 자세한 GPU 실무는 `GPU-STATIONS.md`, 메모리 튜닝은 `MODEL-NOTES.md` 참조.
 
@@ -62,7 +62,7 @@
 | 아키텍처 설계, 난해한 디버깅, 리팩터링 | **Claude Code** | 프론티어 모델이 압도적. 아낄 이유 없음 |
 | 대량 반복 코딩, 보일러플레이트 | **Codex** 또는 Station A | 건당 비용 의식할 구간 |
 | IDE 내 자동완성·인라인 | **Antigravity** | 이미 구독 중 |
-| [마이] 일상 대화·일정·메모 | **Mac Studio 로컬** | 지연 최소, 상시성 |
+| [마이] 일상 대화·일정·메모 | **Mac Studio 27B** | 지연 최소, 상시성 |
 | 이동 중 모든 작업 | **MacBook 로컬** | 네트워크 무관 |
 | **민감 데이터**(환자·개인정보·계약) | **Station A 전용** | 외부 전송 0. 이게 로컬 인프라의 존재 이유 |
 | 무검열 응답이 필요한 작업 | **로컬 전용** | 클라우드로 보낼 이유가 없음 |
