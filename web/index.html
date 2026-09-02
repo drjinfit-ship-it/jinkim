@@ -1,0 +1,1830 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<title>몸의 법정</title>
+<meta name="description" content="법원·공공기관 50분 실습 강의 — 재판형 진행(진술·증거조사·재검사·판결)과 5부위 사전/사후 익명 측정, 실시간 결과 보드">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@700;900&display=swap">
+<style>
+  :root{
+    --navy:#0B1730; --navy-2:#132446; --navy-3:#1C3260; --ink:#F3F6FB; --ink-2:#C5D0E2; --ink-3:#8FA3BF;
+    --amber:#F5B13D; --amber-2:#FFD27A; --green:#3DD68C; --slate:#8FA3BF; --coral:#FF6B6B; --teal:#5FD3C8;
+    --paper:#F7F9FC; --paper-2:#FFFFFF; --paper-3:#E6ECF5; --text:#0B1730; --text-2:#3B4B66; --text-3:#6B7A94; --blue:#1D4ED8;
+    --radius:18px; --font:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic','Pretendard',system-ui,sans-serif; --serif:'Noto Serif KR','Apple Myungjo','Batang',serif;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;font-family:var(--font);background:var(--navy);color:var(--ink);-webkit-font-smoothing:antialiased;overflow:hidden}
+  body.join{background:var(--paper);color:var(--text);overflow:auto}
+  h1,h2,h3{margin:0;text-wrap:balance;line-height:1.15}
+  button{font-family:inherit}
+  .num{font-variant-numeric:tabular-nums}
+  a{color:inherit}
+
+  /* ===== presenter ===== */
+  #stage{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr auto}
+  .chrome{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;font-size:14px;color:var(--ink-3);gap:16px}
+  .chrome b{color:var(--ink-2);font-weight:700}
+  .chrome .clock{display:flex;gap:18px;align-items:center}
+  .chrome .clock .over{color:var(--coral)}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:var(--navy-2);color:var(--ink-2);font-size:12px;font-weight:700;letter-spacing:.04em}
+  .pill.demo{background:#5A3A00;color:var(--amber-2)}
+  .pill.live{background:#0E3B2C;color:var(--green)}
+  .pill.off{background:#4A1F1F;color:#FFB3B3}
+  .pill.manual{background:#2B2F5A;color:#C9CDFF}
+  .slide{padding:0 72px 24px;display:flex;flex-direction:column;justify-content:center;min-height:0;overflow:auto}
+  .slide.top{justify-content:flex-start;padding-top:6px}
+  .slide.top h2{font-size:clamp(24px,3.1vw,42px)}
+  .slide .eyebrow{font-size:16px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);font-weight:700;margin-bottom:16px}
+  .slide h1{font-size:clamp(40px,6vw,84px);font-weight:900}
+  .slide h2{font-size:clamp(28px,3.9vw,54px);font-weight:900}
+  .slide h2.serif{font-family:var(--serif)}
+  .slide .lead{font-size:clamp(19px,2.1vw,29px);color:var(--ink-2);margin-top:20px;max-width:62ch;line-height:1.45}
+  .slide .sub{font-size:clamp(16px,1.6vw,22px);color:var(--ink-3);margin-top:14px;line-height:1.5}
+  .cols{display:grid;gap:22px;margin-top:28px}
+  .cols.c3{grid-template-columns:repeat(3,1fr)}
+  .cols.c2{grid-template-columns:repeat(2,1fr)}
+  .cols.c4{grid-template-columns:repeat(4,1fr)}
+  .cols.c5{grid-template-columns:repeat(5,1fr)}
+  .card{background:var(--navy-2);border-radius:var(--radius);padding:22px 26px;min-height:0}
+  .card .k{font-size:13px;letter-spacing:.12em;color:var(--amber);font-weight:700;text-transform:uppercase}
+  .card .t{font-size:clamp(18px,1.85vw,26px);font-weight:900;margin-top:8px;line-height:1.25}
+  .card .d{font-size:clamp(14px,1.4vw,19px);color:var(--ink-2);margin-top:10px;line-height:1.55}
+  .card .d ul{margin:0;padding-left:20px}
+  .card .d li{margin:4px 0}
+  .issues-grid .card{padding:16px 18px}
+  .practice .card{padding:18px 22px}
+  .practice .card .d{font-size:clamp(13px,1.3vw,17px)}
+  .practice h2{font-size:clamp(26px,3.4vw,46px)}
+  .card.warm{background:#3A2A0F}
+  .card.warm .k{color:var(--amber-2)}
+  .card.cool{background:#0F2E3F}
+  .card.cool .k{color:var(--teal)}
+  .card.ruling{background:#0E3B2C}
+  .card.ruling .k{color:var(--green)}
+  .quote{font-size:clamp(20px,2.4vw,34px);font-weight:700;line-height:1.4;color:var(--amber-2);margin-top:24px;max-width:44ch;font-family:var(--serif)}
+  .safety{margin-top:22px;font-size:clamp(14px,1.35vw,18px);color:#FFC9C9;display:flex;gap:10px;align-items:flex-start;line-height:1.5}
+  .safety::before{content:"!";flex:none;width:26px;height:26px;border-radius:50%;background:#7A2C2C;color:#FFD5D5;display:grid;place-items:center;font-weight:900}
+  .footer{display:flex;justify-content:space-between;align-items:center;padding:10px 28px 18px;font-size:13px;color:var(--ink-3)}
+  .footer .nav{display:flex;gap:8px}
+  .footer button,.iconbtn{background:var(--navy-2);color:var(--ink-2);border:0;border-radius:10px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer}
+  .footer button:hover,.iconbtn:hover{background:var(--navy-3)}
+  .footer button:focus-visible,.iconbtn:focus-visible,.scale button:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+  .kbd{font-family:ui-monospace,Menlo,Consolas,monospace;background:var(--navy-3);padding:1px 6px;border-radius:5px;color:var(--ink-2)}
+
+  /* issue (쟁점) slide */
+  .issue{display:grid;grid-template-columns:1.05fr 1fr;gap:24px;margin-top:22px;align-items:start}
+  .ev{display:grid;gap:10px}
+  .ev .e{background:var(--navy-2);border-radius:14px;padding:14px 16px;display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start}
+  .ev .e .b{font-size:12px;font-weight:900;letter-spacing:.08em;padding:4px 8px;border-radius:6px;background:var(--navy-3);color:var(--ink-2);white-space:nowrap}
+  .ev .e .b.lit{background:#2B2F5A;color:#C9CDFF}
+  .ev .e .b.site{background:#0F2E3F;color:var(--teal)}
+  .ev .e .b.exp{background:#3A2A0F;color:var(--amber-2)}
+  .ev .e .x{font-size:clamp(14px,1.35vw,18px);line-height:1.5;color:var(--ink)}
+  .ev .e .s{font-size:12.5px;color:var(--ink-3);margin-top:4px}
+  .rulingbar{margin-top:20px;background:#0E3B2C;border-radius:16px;padding:18px 22px;display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center}
+  .rulingbar .k{font-size:13px;letter-spacing:.12em;color:var(--green);font-weight:900}
+  .rulingbar .t{font-size:clamp(17px,1.9vw,26px);font-weight:900;line-height:1.35}
+  .rulingbar .a{font-size:clamp(13px,1.3vw,17px);color:var(--ink-2);margin-top:6px}
+  .qno{display:inline-grid;place-items:center;width:44px;height:44px;border-radius:12px;background:var(--amber);color:var(--navy);font-weight:900;font-size:22px;margin-right:12px;vertical-align:middle}
+
+  /* part practice */
+  .hyp{margin-top:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .hyp .tag{font-size:12px;font-weight:900;letter-spacing:.1em;padding:5px 9px;border-radius:6px;background:var(--navy-3);color:var(--amber)}
+  .hyp .x{font-size:clamp(16px,1.7vw,23px);color:var(--ink-2)}
+  .evchips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .evchips span{font-size:clamp(12px,1.15vw,15px);background:var(--navy-2);color:var(--ink-2);padding:6px 10px;border-radius:8px;line-height:1.4}
+  .evchips span b{color:var(--teal);font-weight:900;margin-right:6px}
+
+  /* QR slide */
+  .qrwrap{display:grid;grid-template-columns:minmax(280px,400px) 1fr;gap:48px;align-items:center;margin-top:22px}
+  .qrbox{background:#fff;border-radius:24px;padding:20px;display:grid;place-items:center;aspect-ratio:1/1;width:100%;max-width:400px}
+  .qrbox canvas{width:100%;height:auto;image-rendering:pixelated}
+  .qrurl{font-size:12.5px;color:var(--ink-3);margin-top:10px;word-break:break-all;max-width:400px}
+  .board{display:grid;gap:16px}
+  .stat{background:var(--navy-2);border-radius:var(--radius);padding:20px 24px}
+  .stat .l{font-size:14px;color:var(--ink-3);font-weight:700;letter-spacing:.06em}
+  .stat .v{font-size:clamp(40px,5.4vw,78px);font-weight:900;line-height:1.05;margin-top:6px}
+  .stat .v small{font-size:.38em;color:var(--ink-3);font-weight:700;margin-left:8px}
+  .stat .v.good{color:var(--green)}
+  .stat .v.amber{color:var(--amber)}
+  .stat .v.bad{color:var(--coral)}
+  .stat .m{font-size:15px;color:var(--ink-2);margin-top:8px;line-height:1.5}
+  .stat.row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:18px}
+  .stat.row .arrow{font-size:40px;color:var(--ink-3)}
+  .dist{display:grid;grid-template-columns:repeat(11,1fr);gap:6px;align-items:end;height:100px;margin-top:8px}
+  .dist .bar{background:var(--navy-3);border-radius:6px 6px 2px 2px;position:relative;min-height:3px}
+  .dist .bar.hot{background:var(--amber)}
+  .dist .bar span{position:absolute;bottom:100%;left:0;right:0;text-align:center;font-size:12px;color:var(--ink-2);padding-bottom:3px}
+  .dist .bar i{position:absolute;top:100%;left:0;right:0;text-align:center;font-size:12px;color:var(--ink-3);font-style:normal;padding-top:4px}
+  .waiting{font-size:clamp(18px,2vw,26px);color:var(--ink-3)}
+  .statement{margin-top:14px;font-size:clamp(15px,1.5vw,20px);color:var(--ink-2);line-height:1.5;max-width:60ch}
+
+  /* verdict (finale) */
+  .finale-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:30px;margin-top:20px;align-items:start}
+  .big{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  .big .stat{padding:14px 20px}
+  .big .stat .v{font-size:clamp(36px,4.4vw,64px)}
+  table.parts{width:100%;border-collapse:collapse;font-size:clamp(13px,1.35vw,18px);margin-top:4px}
+  table.parts th,table.parts td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--navy-3)}
+  table.parts th{color:var(--ink-3);font-weight:700;font-size:.85em;letter-spacing:.06em}
+  table.parts td:first-child,table.parts th:first-child{text-align:left;font-weight:700}
+  table.parts .good{color:var(--green);font-weight:900}
+  .barrow{display:grid;grid-template-columns:130px 1fr 64px;gap:12px;align-items:center;margin-top:6px;font-size:clamp(13px,1.3vw,17px)}
+  .barrow .track{height:20px;background:var(--navy-3);border-radius:8px;overflow:hidden}
+  .barrow .fill{height:100%;background:var(--green);width:0;transition:width 1.2s cubic-bezier(.2,.8,.2,1)}
+  .barrow .fill.same{background:var(--slate)}
+  .verdictdoc{margin-top:14px;background:var(--navy-2);border-radius:16px;padding:16px 20px;font-size:clamp(13px,1.3vw,17px);line-height:1.6;color:var(--ink-2);font-family:var(--serif)}
+  .verdictdoc b{color:var(--ink)}
+  .disclaimer{margin-top:16px;font-size:13.5px;color:var(--ink-3);line-height:1.5;max-width:90ch}
+  .reveal{display:grid;place-items:center;min-height:38vh}
+  .reveal button{font-size:clamp(22px,2.6vw,36px);font-weight:900;padding:22px 54px;border-radius:999px;border:0;background:var(--amber);color:var(--navy);cursor:pointer;box-shadow:0 20px 60px rgba(245,177,61,.25);font-family:var(--serif)}
+  .reveal button:hover{background:var(--amber-2)}
+  .refs{font-size:clamp(13px,1.3vw,17px);color:var(--ink-2);line-height:1.6;margin-top:18px;columns:2;column-gap:40px}
+  .refs div{break-inside:avoid;margin-bottom:8px}
+  .refs .c{font-size:11px;color:var(--ink-3);margin-left:6px}
+
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(5,10,24,.78);display:grid;place-items:center;z-index:50;padding:24px}
+  .panel{background:var(--navy-2);border-radius:22px;padding:28px 30px;width:min(880px,96vw);max-height:92vh;overflow:auto;color:var(--ink)}
+  .panel h3{font-size:22px;font-weight:900;margin-bottom:16px}
+  .panel label{display:block;font-size:13px;color:var(--ink-3);font-weight:700;margin:14px 0 6px;letter-spacing:.04em}
+  .panel input[type=text],.panel input[type=url],.panel input[type=number],.panel textarea{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--navy-3);background:var(--navy);color:var(--ink);font-size:15px;font-family:inherit}
+  .panel textarea{min-height:140px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px}
+  .panel .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px}
+  .panel .row button{background:var(--amber);color:var(--navy);border:0;border-radius:10px;padding:10px 16px;font-weight:900;cursor:pointer}
+  .panel .row button.ghost{background:var(--navy-3);color:var(--ink-2)}
+  .panel .hint{font-size:13px;color:var(--ink-3);line-height:1.55;margin-top:8px}
+  .panel .ok{color:var(--green);font-weight:700}
+  .panel .err{color:var(--coral);font-weight:700}
+  .notes{position:fixed;right:24px;bottom:70px;width:min(520px,44vw);background:rgba(19,36,70,.96);border-radius:16px;padding:18px 20px;font-size:15px;line-height:1.6;color:var(--ink-2);z-index:40;box-shadow:0 20px 60px rgba(0,0,0,.4);max-height:60vh;overflow:auto}
+  .notes h4{margin:0 0 8px;font-size:13px;letter-spacing:.1em;color:var(--amber)}
+  .toast{position:fixed;left:50%;bottom:78px;transform:translateX(-50%);background:var(--amber);color:var(--navy);padding:10px 18px;border-radius:999px;font-weight:900;font-size:14px;z-index:60;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  .manual-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+  .manual-grid label{margin:0 0 6px}
+
+  /* ===== participant (join) ===== */
+  .join-wrap{max-width:520px;margin:0 auto;padding:22px 18px 60px}
+  .join-head{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--text-3);font-weight:700;letter-spacing:.04em}
+  .join-card{background:var(--paper-2);border-radius:22px;padding:24px 20px;margin-top:16px;box-shadow:0 10px 40px rgba(11,23,48,.08)}
+  .join-card .phase{display:inline-block;padding:5px 12px;border-radius:999px;font-size:13px;font-weight:900;letter-spacing:.06em}
+  .join-card .phase.pre{background:#E8EFFF;color:var(--blue)}
+  .join-card .phase.post{background:#E6F8EF;color:#0B7A47}
+  .join-card h1{font-size:30px;font-weight:900;margin-top:12px}
+  .join-card .q{font-size:17px;color:var(--text-2);margin-top:10px;line-height:1.5}
+  .scale{display:grid;grid-template-columns:repeat(11,1fr);gap:5px;margin-top:20px}
+  .scale button{aspect-ratio:1/1.35;min-width:0;border-radius:9px;border:2px solid var(--paper-3);background:#fff;font-size:15px;font-weight:900;color:var(--text);cursor:pointer;padding:0;letter-spacing:-.04em}
+  .scale button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .scale .ends{grid-column:1/-1;display:flex;justify-content:space-between;font-size:12px;color:var(--text-3);font-weight:700}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .chips button{border:2px solid var(--paper-3);background:#fff;border-radius:999px;padding:9px 14px;font-size:14px;font-weight:700;color:var(--text-2);cursor:pointer}
+  .chips button.on{background:var(--blue);border-color:var(--blue);color:#fff}
+  .submit{width:100%;margin-top:22px;padding:18px;border-radius:14px;border:0;background:var(--navy);color:#fff;font-size:19px;font-weight:900;cursor:pointer}
+  .submit[disabled]{background:#B9C3D6;cursor:not-allowed}
+  .fine{font-size:12.5px;color:var(--text-3);margin-top:14px;line-height:1.55}
+  .done{text-align:center;padding:14px 0 4px}
+  .done .check{width:72px;height:72px;border-radius:50%;background:#E6F8EF;color:#0B7A47;display:grid;place-items:center;font-size:36px;font-weight:900;margin:0 auto 12px}
+  .done h2{font-size:26px;font-weight:900}
+  .done .mine{margin-top:16px;background:var(--paper);border-radius:14px;padding:14px;font-size:16px;color:var(--text-2)}
+  .done .mine b{font-size:22px;color:var(--text)}
+  .done .card-verdict{margin-top:14px;text-align:left;background:#FFF8E8;border-radius:14px;padding:14px 16px;font-size:14px;line-height:1.6;color:#4A3A10;font-family:var(--serif)}
+  .group{margin-top:16px;border-top:1px dashed var(--paper-3);padding-top:14px}
+  .group .l{font-size:13px;color:var(--text-3);font-weight:700;letter-spacing:.06em}
+  .group .v{font-size:34px;font-weight:900;color:var(--navy);margin-top:4px}
+  .group .v.good{color:#0B7A47}
+  .group .m{font-size:13px;color:var(--text-3);margin-top:4px}
+  .join-error{background:#FFF0F0;color:#8A1F1F;border-radius:14px;padding:16px;font-weight:700;line-height:1.5}
+
+  @media (max-width:900px){
+    .slide{padding:0 28px 16px}
+    .cols.c3,.cols.c5,.cols.c2,.cols.c4{grid-template-columns:1fr}
+    .qrwrap,.issue,.finale-grid{grid-template-columns:1fr}
+    .refs{columns:1}
+  }
+  @media (prefers-reduced-motion:reduce){ .barrow .fill{transition:none} }
+</style>
+
+</head>
+<body>
+<div id="app"></div>
+
+<script>/* QR Code generator — Kazuhiko Arase (MIT), bundled from qrcode-terminal/vendor */
+(function(global){
+var __m={};
+function require(p){return __m[p.replace("./","")];}
+
+/* --- QRMode --- */
+(function(){var module={};
+__m["QRMode"] = {
+    MODE_NUMBER :       1 << 0,
+    MODE_ALPHA_NUM :    1 << 1,
+    MODE_8BIT_BYTE :    1 << 2,
+    MODE_KANJI :        1 << 3
+};
+
+})();
+
+/* --- QRErrorCorrectLevel --- */
+(function(){var module={};
+__m["QRErrorCorrectLevel"] = {
+	L : 1,
+	M : 0,
+	Q : 3,
+	H : 2
+};
+
+
+})();
+
+/* --- QRMaskPattern --- */
+(function(){var module={};
+__m["QRMaskPattern"] = {
+	PATTERN000 : 0,
+	PATTERN001 : 1,
+	PATTERN010 : 2,
+	PATTERN011 : 3,
+	PATTERN100 : 4,
+	PATTERN101 : 5,
+	PATTERN110 : 6,
+	PATTERN111 : 7
+};
+
+})();
+
+/* --- QRMath --- */
+(function(){var module={};
+var QRMath = {
+
+	glog : function(n) {
+	
+		if (n < 1) {
+			throw new Error("glog(" + n + ")");
+		}
+		
+		return QRMath.LOG_TABLE[n];
+	},
+	
+	gexp : function(n) {
+	
+		while (n < 0) {
+			n += 255;
+		}
+	
+		while (n >= 256) {
+			n -= 255;
+		}
+	
+		return QRMath.EXP_TABLE[n];
+	},
+	
+	EXP_TABLE : new Array(256),
+	
+	LOG_TABLE : new Array(256)
+
+};
+	
+for (var i = 0; i < 8; i++) {
+	QRMath.EXP_TABLE[i] = 1 << i;
+}
+for (var i = 8; i < 256; i++) {
+	QRMath.EXP_TABLE[i] = QRMath.EXP_TABLE[i - 4]
+		^ QRMath.EXP_TABLE[i - 5]
+		^ QRMath.EXP_TABLE[i - 6]
+		^ QRMath.EXP_TABLE[i - 8];
+}
+for (var i = 0; i < 255; i++) {
+	QRMath.LOG_TABLE[QRMath.EXP_TABLE[i] ] = i;
+}
+
+__m["QRMath"] = QRMath;
+
+})();
+
+/* --- QRPolynomial --- */
+(function(){var module={};
+var QRMath = require('./QRMath');
+
+function QRPolynomial(num, shift) {
+	if (num.length === undefined) {
+		throw new Error(num.length + "/" + shift);
+	}
+
+	var offset = 0;
+
+	while (offset < num.length && num[offset] === 0) {
+		offset++;
+	}
+
+	this.num = new Array(num.length - offset + shift);
+	for (var i = 0; i < num.length - offset; i++) {
+		this.num[i] = num[i + offset];
+	}
+}
+
+QRPolynomial.prototype = {
+
+	get : function(index) {
+		return this.num[index];
+	},
+	
+	getLength : function() {
+		return this.num.length;
+	},
+	
+	multiply : function(e) {
+	
+		var num = new Array(this.getLength() + e.getLength() - 1);
+	
+		for (var i = 0; i < this.getLength(); i++) {
+			for (var j = 0; j < e.getLength(); j++) {
+				num[i + j] ^= QRMath.gexp(QRMath.glog(this.get(i) ) + QRMath.glog(e.get(j) ) );
+			}
+		}
+	
+		return new QRPolynomial(num, 0);
+	},
+	
+	mod : function(e) {
+	
+		if (this.getLength() - e.getLength() < 0) {
+			return this;
+		}
+	
+		var ratio = QRMath.glog(this.get(0) ) - QRMath.glog(e.get(0) );
+	
+		var num = new Array(this.getLength() );
+		
+		for (var i = 0; i < this.getLength(); i++) {
+			num[i] = this.get(i);
+		}
+		
+		for (var x = 0; x < e.getLength(); x++) {
+			num[x] ^= QRMath.gexp(QRMath.glog(e.get(x) ) + ratio);
+		}
+	
+		// recursive call
+		return new QRPolynomial(num, 0).mod(e);
+	}
+};
+
+__m["QRPolynomial"] = QRPolynomial;
+
+})();
+
+/* --- QRRSBlock --- */
+(function(){var module={};
+var QRErrorCorrectLevel = require('./QRErrorCorrectLevel');
+
+function QRRSBlock(totalCount, dataCount) {
+	this.totalCount = totalCount;
+	this.dataCount  = dataCount;
+}
+
+QRRSBlock.RS_BLOCK_TABLE = [
+
+	// L
+	// M
+	// Q
+	// H
+
+	// 1
+	[1, 26, 19],
+	[1, 26, 16],
+	[1, 26, 13],
+	[1, 26, 9],
+	
+	// 2
+	[1, 44, 34],
+	[1, 44, 28],
+	[1, 44, 22],
+	[1, 44, 16],
+
+	// 3
+	[1, 70, 55],
+	[1, 70, 44],
+	[2, 35, 17],
+	[2, 35, 13],
+
+	// 4		
+	[1, 100, 80],
+	[2, 50, 32],
+	[2, 50, 24],
+	[4, 25, 9],
+	
+	// 5
+	[1, 134, 108],
+	[2, 67, 43],
+	[2, 33, 15, 2, 34, 16],
+	[2, 33, 11, 2, 34, 12],
+	
+	// 6
+	[2, 86, 68],
+	[4, 43, 27],
+	[4, 43, 19],
+	[4, 43, 15],
+	
+	// 7		
+	[2, 98, 78],
+	[4, 49, 31],
+	[2, 32, 14, 4, 33, 15],
+	[4, 39, 13, 1, 40, 14],
+	
+	// 8
+	[2, 121, 97],
+	[2, 60, 38, 2, 61, 39],
+	[4, 40, 18, 2, 41, 19],
+	[4, 40, 14, 2, 41, 15],
+	
+	// 9
+	[2, 146, 116],
+	[3, 58, 36, 2, 59, 37],
+	[4, 36, 16, 4, 37, 17],
+	[4, 36, 12, 4, 37, 13],
+	
+	// 10		
+	[2, 86, 68, 2, 87, 69],
+	[4, 69, 43, 1, 70, 44],
+	[6, 43, 19, 2, 44, 20],
+	[6, 43, 15, 2, 44, 16],
+
+	// 11
+	[4, 101, 81],
+	[1, 80, 50, 4, 81, 51],
+	[4, 50, 22, 4, 51, 23],
+	[3, 36, 12, 8, 37, 13],
+
+	// 12
+	[2, 116, 92, 2, 117, 93],
+	[6, 58, 36, 2, 59, 37],
+	[4, 46, 20, 6, 47, 21],
+	[7, 42, 14, 4, 43, 15],
+
+	// 13
+	[4, 133, 107],
+	[8, 59, 37, 1, 60, 38],
+	[8, 44, 20, 4, 45, 21],
+	[12, 33, 11, 4, 34, 12],
+
+	// 14
+	[3, 145, 115, 1, 146, 116],
+	[4, 64, 40, 5, 65, 41],
+	[11, 36, 16, 5, 37, 17],
+	[11, 36, 12, 5, 37, 13],
+
+	// 15
+	[5, 109, 87, 1, 110, 88],
+	[5, 65, 41, 5, 66, 42],
+	[5, 54, 24, 7, 55, 25],
+	[11, 36, 12],
+
+	// 16
+	[5, 122, 98, 1, 123, 99],
+	[7, 73, 45, 3, 74, 46],
+	[15, 43, 19, 2, 44, 20],
+	[3, 45, 15, 13, 46, 16],
+
+	// 17
+	[1, 135, 107, 5, 136, 108],
+	[10, 74, 46, 1, 75, 47],
+	[1, 50, 22, 15, 51, 23],
+	[2, 42, 14, 17, 43, 15],
+
+	// 18
+	[5, 150, 120, 1, 151, 121],
+	[9, 69, 43, 4, 70, 44],
+	[17, 50, 22, 1, 51, 23],
+	[2, 42, 14, 19, 43, 15],
+
+	// 19
+	[3, 141, 113, 4, 142, 114],
+	[3, 70, 44, 11, 71, 45],
+	[17, 47, 21, 4, 48, 22],
+	[9, 39, 13, 16, 40, 14],
+
+	// 20
+	[3, 135, 107, 5, 136, 108],
+	[3, 67, 41, 13, 68, 42],
+	[15, 54, 24, 5, 55, 25],
+	[15, 43, 15, 10, 44, 16],
+
+	// 21
+	[4, 144, 116, 4, 145, 117],
+	[17, 68, 42],
+	[17, 50, 22, 6, 51, 23],
+	[19, 46, 16, 6, 47, 17],
+
+	// 22
+	[2, 139, 111, 7, 140, 112],
+	[17, 74, 46],
+	[7, 54, 24, 16, 55, 25],
+	[34, 37, 13],
+
+	// 23
+	[4, 151, 121, 5, 152, 122],
+	[4, 75, 47, 14, 76, 48],
+	[11, 54, 24, 14, 55, 25],
+	[16, 45, 15, 14, 46, 16],
+
+	// 24
+	[6, 147, 117, 4, 148, 118],
+	[6, 73, 45, 14, 74, 46],
+	[11, 54, 24, 16, 55, 25],
+	[30, 46, 16, 2, 47, 17],
+
+	// 25
+	[8, 132, 106, 4, 133, 107],
+	[8, 75, 47, 13, 76, 48],
+	[7, 54, 24, 22, 55, 25],
+	[22, 45, 15, 13, 46, 16],
+
+	// 26
+	[10, 142, 114, 2, 143, 115],
+	[19, 74, 46, 4, 75, 47],
+	[28, 50, 22, 6, 51, 23],
+	[33, 46, 16, 4, 47, 17],
+
+	// 27
+	[8, 152, 122, 4, 153, 123],
+	[22, 73, 45, 3, 74, 46],
+	[8, 53, 23, 26, 54, 24],
+	[12, 45, 15, 28, 46, 16],
+
+	// 28
+	[3, 147, 117, 10, 148, 118],
+	[3, 73, 45, 23, 74, 46],
+	[4, 54, 24, 31, 55, 25],
+	[11, 45, 15, 31, 46, 16],
+
+	// 29
+	[7, 146, 116, 7, 147, 117],
+	[21, 73, 45, 7, 74, 46],
+	[1, 53, 23, 37, 54, 24],
+	[19, 45, 15, 26, 46, 16],
+
+	// 30
+	[5, 145, 115, 10, 146, 116],
+	[19, 75, 47, 10, 76, 48],
+	[15, 54, 24, 25, 55, 25],
+	[23, 45, 15, 25, 46, 16],
+
+	// 31
+	[13, 145, 115, 3, 146, 116],
+	[2, 74, 46, 29, 75, 47],
+	[42, 54, 24, 1, 55, 25],
+	[23, 45, 15, 28, 46, 16],
+
+	// 32
+	[17, 145, 115],
+	[10, 74, 46, 23, 75, 47],
+	[10, 54, 24, 35, 55, 25],
+	[19, 45, 15, 35, 46, 16],
+
+	// 33
+	[17, 145, 115, 1, 146, 116],
+	[14, 74, 46, 21, 75, 47],
+	[29, 54, 24, 19, 55, 25],
+	[11, 45, 15, 46, 46, 16],
+
+	// 34
+	[13, 145, 115, 6, 146, 116],
+	[14, 74, 46, 23, 75, 47],
+	[44, 54, 24, 7, 55, 25],
+	[59, 46, 16, 1, 47, 17],
+
+	// 35
+	[12, 151, 121, 7, 152, 122],
+	[12, 75, 47, 26, 76, 48],
+	[39, 54, 24, 14, 55, 25],
+	[22, 45, 15, 41, 46, 16],
+
+	// 36
+	[6, 151, 121, 14, 152, 122],
+	[6, 75, 47, 34, 76, 48],
+	[46, 54, 24, 10, 55, 25],
+	[2, 45, 15, 64, 46, 16],
+
+	// 37
+	[17, 152, 122, 4, 153, 123],
+	[29, 74, 46, 14, 75, 47],
+	[49, 54, 24, 10, 55, 25],
+	[24, 45, 15, 46, 46, 16],
+
+	// 38
+	[4, 152, 122, 18, 153, 123],
+	[13, 74, 46, 32, 75, 47],
+	[48, 54, 24, 14, 55, 25],
+	[42, 45, 15, 32, 46, 16],
+
+	// 39
+	[20, 147, 117, 4, 148, 118],
+	[40, 75, 47, 7, 76, 48],
+	[43, 54, 24, 22, 55, 25],
+	[10, 45, 15, 67, 46, 16],
+
+	// 40
+	[19, 148, 118, 6, 149, 119],
+	[18, 75, 47, 31, 76, 48],
+	[34, 54, 24, 34, 55, 25],
+	[20, 45, 15, 61, 46, 16]
+];
+
+QRRSBlock.getRSBlocks = function(typeNumber, errorCorrectLevel) {
+	
+	var rsBlock = QRRSBlock.getRsBlockTable(typeNumber, errorCorrectLevel);
+	
+	if (rsBlock === undefined) {
+		throw new Error("bad rs block @ typeNumber:" + typeNumber + "/errorCorrectLevel:" + errorCorrectLevel);
+	}
+
+	var length = rsBlock.length / 3;
+	
+	var list = [];
+	
+	for (var i = 0; i < length; i++) {
+
+		var count = rsBlock[i * 3 + 0];
+		var totalCount = rsBlock[i * 3 + 1];
+		var dataCount  = rsBlock[i * 3 + 2];
+
+		for (var j = 0; j < count; j++) {
+			list.push(new QRRSBlock(totalCount, dataCount) );	
+		}
+	}
+	
+	return list;
+};
+
+QRRSBlock.getRsBlockTable = function(typeNumber, errorCorrectLevel) {
+
+	switch(errorCorrectLevel) {
+	case QRErrorCorrectLevel.L :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 0];
+	case QRErrorCorrectLevel.M :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 1];
+	case QRErrorCorrectLevel.Q :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 2];
+	case QRErrorCorrectLevel.H :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 3];
+	default :
+		return undefined;
+	}
+};
+
+__m["QRRSBlock"] = QRRSBlock;
+
+})();
+
+/* --- QRBitBuffer --- */
+(function(){var module={};
+function QRBitBuffer() {
+	this.buffer = [];
+	this.length = 0;
+}
+
+QRBitBuffer.prototype = {
+
+	get : function(index) {
+		var bufIndex = Math.floor(index / 8);
+		return ( (this.buffer[bufIndex] >>> (7 - index % 8) ) & 1) == 1;
+	},
+	
+	put : function(num, length) {
+		for (var i = 0; i < length; i++) {
+			this.putBit( ( (num >>> (length - i - 1) ) & 1) == 1);
+		}
+	},
+	
+	getLengthInBits : function() {
+		return this.length;
+	},
+	
+	putBit : function(bit) {
+	
+		var bufIndex = Math.floor(this.length / 8);
+		if (this.buffer.length <= bufIndex) {
+			this.buffer.push(0);
+		}
+	
+		if (bit) {
+			this.buffer[bufIndex] |= (0x80 >>> (this.length % 8) );
+		}
+	
+		this.length++;
+	}
+};
+
+__m["QRBitBuffer"] = QRBitBuffer;
+
+})();
+
+/* --- QR8bitByte --- */
+(function(){var module={};
+var QRMode = require('./QRMode');
+
+function QR8bitByte(data) {
+	this.mode = QRMode.MODE_8BIT_BYTE;
+	this.data = data;
+}
+
+QR8bitByte.prototype = {
+
+	getLength : function() {
+		return this.data.length;
+	},
+	
+	write : function(buffer) {
+		for (var i = 0; i < this.data.length; i++) {
+			// not JIS ...
+			buffer.put(this.data.charCodeAt(i), 8);
+		}
+	}
+};
+
+__m["QR8bitByte"] = QR8bitByte;
+
+})();
+
+/* --- QRUtil --- */
+(function(){var module={};
+var QRMode = require('./QRMode');
+var QRPolynomial = require('./QRPolynomial');
+var QRMath = require('./QRMath');
+var QRMaskPattern = require('./QRMaskPattern');
+
+var QRUtil = {
+
+    PATTERN_POSITION_TABLE : [
+        [],
+        [6, 18],
+        [6, 22],
+        [6, 26],
+        [6, 30],
+        [6, 34],
+        [6, 22, 38],
+        [6, 24, 42],
+        [6, 26, 46],
+        [6, 28, 50],
+        [6, 30, 54],        
+        [6, 32, 58],
+        [6, 34, 62],
+        [6, 26, 46, 66],
+        [6, 26, 48, 70],
+        [6, 26, 50, 74],
+        [6, 30, 54, 78],
+        [6, 30, 56, 82],
+        [6, 30, 58, 86],
+        [6, 34, 62, 90],
+        [6, 28, 50, 72, 94],
+        [6, 26, 50, 74, 98],
+        [6, 30, 54, 78, 102],
+        [6, 28, 54, 80, 106],
+        [6, 32, 58, 84, 110],
+        [6, 30, 58, 86, 114],
+        [6, 34, 62, 90, 118],
+        [6, 26, 50, 74, 98, 122],
+        [6, 30, 54, 78, 102, 126],
+        [6, 26, 52, 78, 104, 130],
+        [6, 30, 56, 82, 108, 134],
+        [6, 34, 60, 86, 112, 138],
+        [6, 30, 58, 86, 114, 142],
+        [6, 34, 62, 90, 118, 146],
+        [6, 30, 54, 78, 102, 126, 150],
+        [6, 24, 50, 76, 102, 128, 154],
+        [6, 28, 54, 80, 106, 132, 158],
+        [6, 32, 58, 84, 110, 136, 162],
+        [6, 26, 54, 82, 110, 138, 166],
+        [6, 30, 58, 86, 114, 142, 170]
+    ],
+
+    G15 : (1 << 10) | (1 << 8) | (1 << 5) | (1 << 4) | (1 << 2) | (1 << 1) | (1 << 0),
+    G18 : (1 << 12) | (1 << 11) | (1 << 10) | (1 << 9) | (1 << 8) | (1 << 5) | (1 << 2) | (1 << 0),
+    G15_MASK : (1 << 14) | (1 << 12) | (1 << 10)    | (1 << 4) | (1 << 1),
+
+    getBCHTypeInfo : function(data) {
+        var d = data << 10;
+        while (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G15) >= 0) {
+            d ^= (QRUtil.G15 << (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G15) ) );    
+        }
+        return ( (data << 10) | d) ^ QRUtil.G15_MASK;
+    },
+
+    getBCHTypeNumber : function(data) {
+        var d = data << 12;
+        while (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G18) >= 0) {
+            d ^= (QRUtil.G18 << (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G18) ) );    
+        }
+        return (data << 12) | d;
+    },
+
+    getBCHDigit : function(data) {
+
+        var digit = 0;
+
+        while (data !== 0) {
+            digit++;
+            data >>>= 1;
+        }
+
+        return digit;
+    },
+
+    getPatternPosition : function(typeNumber) {
+        return QRUtil.PATTERN_POSITION_TABLE[typeNumber - 1];
+    },
+
+    getMask : function(maskPattern, i, j) {
+        
+        switch (maskPattern) {
+            
+        case QRMaskPattern.PATTERN000 : return (i + j) % 2 === 0;
+        case QRMaskPattern.PATTERN001 : return i % 2 === 0;
+        case QRMaskPattern.PATTERN010 : return j % 3 === 0;
+        case QRMaskPattern.PATTERN011 : return (i + j) % 3 === 0;
+        case QRMaskPattern.PATTERN100 : return (Math.floor(i / 2) + Math.floor(j / 3) ) % 2 === 0;
+        case QRMaskPattern.PATTERN101 : return (i * j) % 2 + (i * j) % 3 === 0;
+        case QRMaskPattern.PATTERN110 : return ( (i * j) % 2 + (i * j) % 3) % 2 === 0;
+        case QRMaskPattern.PATTERN111 : return ( (i * j) % 3 + (i + j) % 2) % 2 === 0;
+
+        default :
+            throw new Error("bad maskPattern:" + maskPattern);
+        }
+    },
+
+    getErrorCorrectPolynomial : function(errorCorrectLength) {
+
+        var a = new QRPolynomial([1], 0);
+
+        for (var i = 0; i < errorCorrectLength; i++) {
+            a = a.multiply(new QRPolynomial([1, QRMath.gexp(i)], 0) );
+        }
+
+        return a;
+    },
+
+    getLengthInBits : function(mode, type) {
+
+        if (1 <= type && type < 10) {
+
+            // 1 - 9
+
+            switch(mode) {
+            case QRMode.MODE_NUMBER     : return 10;
+            case QRMode.MODE_ALPHA_NUM  : return 9;
+            case QRMode.MODE_8BIT_BYTE  : return 8;
+            case QRMode.MODE_KANJI      : return 8;
+            default :
+                throw new Error("mode:" + mode);
+            }
+
+        } else if (type < 27) {
+
+            // 10 - 26
+
+            switch(mode) {
+            case QRMode.MODE_NUMBER     : return 12;
+            case QRMode.MODE_ALPHA_NUM  : return 11;
+            case QRMode.MODE_8BIT_BYTE  : return 16;
+            case QRMode.MODE_KANJI      : return 10;
+            default :
+                throw new Error("mode:" + mode);
+            }
+
+        } else if (type < 41) {
+
+            // 27 - 40
+
+            switch(mode) {
+            case QRMode.MODE_NUMBER     : return 14;
+            case QRMode.MODE_ALPHA_NUM  : return 13;
+            case QRMode.MODE_8BIT_BYTE  : return 16;
+            case QRMode.MODE_KANJI      : return 12;
+            default :
+                throw new Error("mode:" + mode);
+            }
+
+        } else {
+            throw new Error("type:" + type);
+        }
+    },
+
+    getLostPoint : function(qrCode) {
+        
+        var moduleCount = qrCode.getModuleCount();
+        var lostPoint = 0;
+        var row = 0; 
+        var col = 0;
+
+        
+        // LEVEL1
+        
+        for (row = 0; row < moduleCount; row++) {
+
+            for (col = 0; col < moduleCount; col++) {
+
+                var sameCount = 0;
+                var dark = qrCode.isDark(row, col);
+
+                for (var r = -1; r <= 1; r++) {
+
+                    if (row + r < 0 || moduleCount <= row + r) {
+                        continue;
+                    }
+
+                    for (var c = -1; c <= 1; c++) {
+
+                        if (col + c < 0 || moduleCount <= col + c) {
+                            continue;
+                        }
+
+                        if (r === 0 && c === 0) {
+                            continue;
+                        }
+
+                        if (dark === qrCode.isDark(row + r, col + c) ) {
+                            sameCount++;
+                        }
+                    }
+                }
+
+                if (sameCount > 5) {
+                    lostPoint += (3 + sameCount - 5);
+                }
+            }
+        }
+
+        // LEVEL2
+
+        for (row = 0; row < moduleCount - 1; row++) {
+            for (col = 0; col < moduleCount - 1; col++) {
+                var count = 0;
+                if (qrCode.isDark(row,     col    ) ) count++;
+                if (qrCode.isDark(row + 1, col    ) ) count++;
+                if (qrCode.isDark(row,     col + 1) ) count++;
+                if (qrCode.isDark(row + 1, col + 1) ) count++;
+                if (count === 0 || count === 4) {
+                    lostPoint += 3;
+                }
+            }
+        }
+
+        // LEVEL3
+
+        for (row = 0; row < moduleCount; row++) {
+            for (col = 0; col < moduleCount - 6; col++) {
+                if (qrCode.isDark(row, col) && 
+                        !qrCode.isDark(row, col + 1) && 
+                         qrCode.isDark(row, col + 2) && 
+                         qrCode.isDark(row, col + 3) && 
+                         qrCode.isDark(row, col + 4) && 
+                        !qrCode.isDark(row, col + 5) && 
+                         qrCode.isDark(row, col + 6) ) {
+                    lostPoint += 40;
+                }
+            }
+        }
+
+        for (col = 0; col < moduleCount; col++) {
+            for (row = 0; row < moduleCount - 6; row++) {
+                if (qrCode.isDark(row, col) &&
+                        !qrCode.isDark(row + 1, col) &&
+                         qrCode.isDark(row + 2, col) &&
+                         qrCode.isDark(row + 3, col) &&
+                         qrCode.isDark(row + 4, col) &&
+                        !qrCode.isDark(row + 5, col) &&
+                         qrCode.isDark(row + 6, col) ) {
+                    lostPoint += 40;
+                }
+            }
+        }
+
+        // LEVEL4
+        
+        var darkCount = 0;
+
+        for (col = 0; col < moduleCount; col++) {
+            for (row = 0; row < moduleCount; row++) {
+                if (qrCode.isDark(row, col) ) {
+                    darkCount++;
+                }
+            }
+        }
+        
+        var ratio = Math.abs(100 * darkCount / moduleCount / moduleCount - 50) / 5;
+        lostPoint += ratio * 10;
+
+        return lostPoint;       
+    }
+
+};
+
+__m["QRUtil"] = QRUtil;
+
+})();
+
+/* --- index --- */
+(function(){var module={};
+//---------------------------------------------------------------------
+// QRCode for JavaScript
+//
+// Copyright (c) 2009 Kazuhiko Arase
+//
+// URL: http://www.d-project.com/
+//
+// Licensed under the MIT license:
+//   http://www.opensource.org/licenses/mit-license.php
+//
+// The word "QR Code" is registered trademark of 
+// DENSO WAVE INCORPORATED
+//   http://www.denso-wave.com/qrcode/faqpatent-e.html
+//
+//---------------------------------------------------------------------
+// Modified to work in node for this project (and some refactoring)
+//---------------------------------------------------------------------
+
+var QR8bitByte = require('./QR8bitByte');
+var QRUtil = require('./QRUtil');
+var QRPolynomial = require('./QRPolynomial');
+var QRRSBlock = require('./QRRSBlock');
+var QRBitBuffer = require('./QRBitBuffer');
+
+function QRCode(typeNumber, errorCorrectLevel) {
+	this.typeNumber = typeNumber;
+	this.errorCorrectLevel = errorCorrectLevel;
+	this.modules = null;
+	this.moduleCount = 0;
+	this.dataCache = null;
+	this.dataList = [];
+}
+
+QRCode.prototype = {
+	
+	addData : function(data) {
+		var newData = new QR8bitByte(data);
+		this.dataList.push(newData);
+		this.dataCache = null;
+	},
+	
+	isDark : function(row, col) {
+		if (row < 0 || this.moduleCount <= row || col < 0 || this.moduleCount <= col) {
+			throw new Error(row + "," + col);
+		}
+		return this.modules[row][col];
+	},
+
+	getModuleCount : function() {
+		return this.moduleCount;
+	},
+	
+	make : function() {
+		// Calculate automatically typeNumber if provided is < 1
+		if (this.typeNumber < 1 ){
+			var typeNumber = 1;
+			for (typeNumber = 1; typeNumber < 40; typeNumber++) {
+				var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, this.errorCorrectLevel);
+
+				var buffer = new QRBitBuffer();
+				var totalDataCount = 0;
+				for (var i = 0; i < rsBlocks.length; i++) {
+					totalDataCount += rsBlocks[i].dataCount;
+				}
+
+				for (var x = 0; x < this.dataList.length; x++) {
+					var data = this.dataList[x];
+					buffer.put(data.mode, 4);
+					buffer.put(data.getLength(), QRUtil.getLengthInBits(data.mode, typeNumber) );
+					data.write(buffer);
+				}
+				if (buffer.getLengthInBits() <= totalDataCount * 8)
+					break;
+			}
+			this.typeNumber = typeNumber;
+		}
+		this.makeImpl(false, this.getBestMaskPattern() );
+	},
+	
+	makeImpl : function(test, maskPattern) {
+		
+		this.moduleCount = this.typeNumber * 4 + 17;
+		this.modules = new Array(this.moduleCount);
+		
+		for (var row = 0; row < this.moduleCount; row++) {
+			
+			this.modules[row] = new Array(this.moduleCount);
+			
+			for (var col = 0; col < this.moduleCount; col++) {
+				this.modules[row][col] = null;//(col + row) % 3;
+			}
+		}
+	
+		this.setupPositionProbePattern(0, 0);
+		this.setupPositionProbePattern(this.moduleCount - 7, 0);
+		this.setupPositionProbePattern(0, this.moduleCount - 7);
+		this.setupPositionAdjustPattern();
+		this.setupTimingPattern();
+		this.setupTypeInfo(test, maskPattern);
+		
+		if (this.typeNumber >= 7) {
+			this.setupTypeNumber(test);
+		}
+	
+		if (this.dataCache === null) {
+			this.dataCache = QRCode.createData(this.typeNumber, this.errorCorrectLevel, this.dataList);
+		}
+	
+		this.mapData(this.dataCache, maskPattern);
+	},
+
+	setupPositionProbePattern : function(row, col)  {
+		
+		for (var r = -1; r <= 7; r++) {
+			
+			if (row + r <= -1 || this.moduleCount <= row + r) continue;
+			
+			for (var c = -1; c <= 7; c++) {
+				
+				if (col + c <= -1 || this.moduleCount <= col + c) continue;
+				
+				if ( (0 <= r && r <= 6 && (c === 0 || c === 6) ) || 
+                     (0 <= c && c <= 6 && (r === 0 || r === 6) ) || 
+                     (2 <= r && r <= 4 && 2 <= c && c <= 4) ) {
+					this.modules[row + r][col + c] = true;
+				} else {
+					this.modules[row + r][col + c] = false;
+				}
+			}		
+		}		
+	},
+	
+	getBestMaskPattern : function() {
+	
+		var minLostPoint = 0;
+		var pattern = 0;
+	
+		for (var i = 0; i < 8; i++) {
+			
+			this.makeImpl(true, i);
+	
+			var lostPoint = QRUtil.getLostPoint(this);
+	
+			if (i === 0 || minLostPoint >  lostPoint) {
+				minLostPoint = lostPoint;
+				pattern = i;
+			}
+		}
+	
+		return pattern;
+	},
+	
+	createMovieClip : function(target_mc, instance_name, depth) {
+	
+		var qr_mc = target_mc.createEmptyMovieClip(instance_name, depth);
+		var cs = 1;
+	
+		this.make();
+
+		for (var row = 0; row < this.modules.length; row++) {
+			
+			var y = row * cs;
+			
+			for (var col = 0; col < this.modules[row].length; col++) {
+	
+				var x = col * cs;
+				var dark = this.modules[row][col];
+			
+				if (dark) {
+					qr_mc.beginFill(0, 100);
+					qr_mc.moveTo(x, y);
+					qr_mc.lineTo(x + cs, y);
+					qr_mc.lineTo(x + cs, y + cs);
+					qr_mc.lineTo(x, y + cs);
+					qr_mc.endFill();
+				}
+			}
+		}
+		
+		return qr_mc;
+	},
+
+	setupTimingPattern : function() {
+		
+		for (var r = 8; r < this.moduleCount - 8; r++) {
+			if (this.modules[r][6] !== null) {
+				continue;
+			}
+			this.modules[r][6] = (r % 2 === 0);
+		}
+	
+		for (var c = 8; c < this.moduleCount - 8; c++) {
+			if (this.modules[6][c] !== null) {
+				continue;
+			}
+			this.modules[6][c] = (c % 2 === 0);
+		}
+	},
+	
+	setupPositionAdjustPattern : function() {
+	
+		var pos = QRUtil.getPatternPosition(this.typeNumber);
+		
+		for (var i = 0; i < pos.length; i++) {
+		
+			for (var j = 0; j < pos.length; j++) {
+			
+				var row = pos[i];
+				var col = pos[j];
+				
+				if (this.modules[row][col] !== null) {
+					continue;
+				}
+				
+				for (var r = -2; r <= 2; r++) {
+				
+					for (var c = -2; c <= 2; c++) {
+					
+						if (Math.abs(r) === 2 || 
+                            Math.abs(c) === 2 ||
+                            (r === 0 && c === 0) ) {
+							this.modules[row + r][col + c] = true;
+						} else {
+							this.modules[row + r][col + c] = false;
+						}
+					}
+				}
+			}
+		}
+	},
+	
+	setupTypeNumber : function(test) {
+	
+		var bits = QRUtil.getBCHTypeNumber(this.typeNumber);
+        var mod;
+	
+		for (var i = 0; i < 18; i++) {
+			mod = (!test && ( (bits >> i) & 1) === 1);
+			this.modules[Math.floor(i / 3)][i % 3 + this.moduleCount - 8 - 3] = mod;
+		}
+	
+		for (var x = 0; x < 18; x++) {
+			mod = (!test && ( (bits >> x) & 1) === 1);
+			this.modules[x % 3 + this.moduleCount - 8 - 3][Math.floor(x / 3)] = mod;
+		}
+	},
+	
+	setupTypeInfo : function(test, maskPattern) {
+	
+		var data = (this.errorCorrectLevel << 3) | maskPattern;
+		var bits = QRUtil.getBCHTypeInfo(data);
+        var mod;
+	
+		// vertical		
+		for (var v = 0; v < 15; v++) {
+	
+			mod = (!test && ( (bits >> v) & 1) === 1);
+	
+			if (v < 6) {
+				this.modules[v][8] = mod;
+			} else if (v < 8) {
+				this.modules[v + 1][8] = mod;
+			} else {
+				this.modules[this.moduleCount - 15 + v][8] = mod;
+			}
+		}
+	
+		// horizontal
+		for (var h = 0; h < 15; h++) {
+	
+			mod = (!test && ( (bits >> h) & 1) === 1);
+			
+			if (h < 8) {
+				this.modules[8][this.moduleCount - h - 1] = mod;
+			} else if (h < 9) {
+				this.modules[8][15 - h - 1 + 1] = mod;
+			} else {
+				this.modules[8][15 - h - 1] = mod;
+			}
+		}
+	
+		// fixed module
+		this.modules[this.moduleCount - 8][8] = (!test);
+	
+	},
+	
+	mapData : function(data, maskPattern) {
+		
+		var inc = -1;
+		var row = this.moduleCount - 1;
+		var bitIndex = 7;
+		var byteIndex = 0;
+		
+		for (var col = this.moduleCount - 1; col > 0; col -= 2) {
+	
+			if (col === 6) col--;
+	
+			while (true) {
+	
+				for (var c = 0; c < 2; c++) {
+					
+					if (this.modules[row][col - c] === null) {
+						
+						var dark = false;
+	
+						if (byteIndex < data.length) {
+							dark = ( ( (data[byteIndex] >>> bitIndex) & 1) === 1);
+						}
+	
+						var mask = QRUtil.getMask(maskPattern, row, col - c);
+	
+						if (mask) {
+							dark = !dark;
+						}
+						
+						this.modules[row][col - c] = dark;
+						bitIndex--;
+	
+						if (bitIndex === -1) {
+							byteIndex++;
+							bitIndex = 7;
+						}
+					}
+				}
+								
+				row += inc;
+	
+				if (row < 0 || this.moduleCount <= row) {
+					row -= inc;
+					inc = -inc;
+					break;
+				}
+			}
+		}
+		
+	}
+
+};
+
+QRCode.PAD0 = 0xEC;
+QRCode.PAD1 = 0x11;
+
+QRCode.createData = function(typeNumber, errorCorrectLevel, dataList) {
+	
+	var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, errorCorrectLevel);
+	
+	var buffer = new QRBitBuffer();
+	
+	for (var i = 0; i < dataList.length; i++) {
+		var data = dataList[i];
+		buffer.put(data.mode, 4);
+		buffer.put(data.getLength(), QRUtil.getLengthInBits(data.mode, typeNumber) );
+		data.write(buffer);
+	}
+
+	// calc num max data.
+	var totalDataCount = 0;
+	for (var x = 0; x < rsBlocks.length; x++) {
+		totalDataCount += rsBlocks[x].dataCount;
+	}
+
+	if (buffer.getLengthInBits() > totalDataCount * 8) {
+		throw new Error("code length overflow. (" + 
+            buffer.getLengthInBits() + 
+            ">" +  
+            totalDataCount * 8 + 
+            ")");
+	}
+
+	// end code
+	if (buffer.getLengthInBits() + 4 <= totalDataCount * 8) {
+		buffer.put(0, 4);
+	}
+
+	// padding
+	while (buffer.getLengthInBits() % 8 !== 0) {
+		buffer.putBit(false);
+	}
+
+	// padding
+	while (true) {
+		
+		if (buffer.getLengthInBits() >= totalDataCount * 8) {
+			break;
+		}
+		buffer.put(QRCode.PAD0, 8);
+		
+		if (buffer.getLengthInBits() >= totalDataCount * 8) {
+			break;
+		}
+		buffer.put(QRCode.PAD1, 8);
+	}
+
+	return QRCode.createBytes(buffer, rsBlocks);
+};
+
+QRCode.createBytes = function(buffer, rsBlocks) {
+
+	var offset = 0;
+	
+	var maxDcCount = 0;
+	var maxEcCount = 0;
+	
+	var dcdata = new Array(rsBlocks.length);
+	var ecdata = new Array(rsBlocks.length);
+	
+	for (var r = 0; r < rsBlocks.length; r++) {
+
+		var dcCount = rsBlocks[r].dataCount;
+		var ecCount = rsBlocks[r].totalCount - dcCount;
+
+		maxDcCount = Math.max(maxDcCount, dcCount);
+		maxEcCount = Math.max(maxEcCount, ecCount);
+		
+		dcdata[r] = new Array(dcCount);
+		
+		for (var i = 0; i < dcdata[r].length; i++) {
+			dcdata[r][i] = 0xff & buffer.buffer[i + offset];
+		}
+		offset += dcCount;
+		
+		var rsPoly = QRUtil.getErrorCorrectPolynomial(ecCount);
+		var rawPoly = new QRPolynomial(dcdata[r], rsPoly.getLength() - 1);
+
+		var modPoly = rawPoly.mod(rsPoly);
+		ecdata[r] = new Array(rsPoly.getLength() - 1);
+		for (var x = 0; x < ecdata[r].length; x++) {
+            var modIndex = x + modPoly.getLength() - ecdata[r].length;
+			ecdata[r][x] = (modIndex >= 0)? modPoly.get(modIndex) : 0;
+		}
+
+	}
+	
+	var totalCodeCount = 0;
+	for (var y = 0; y < rsBlocks.length; y++) {
+		totalCodeCount += rsBlocks[y].totalCount;
+	}
+
+	var data = new Array(totalCodeCount);
+	var index = 0;
+
+	for (var z = 0; z < maxDcCount; z++) {
+		for (var s = 0; s < rsBlocks.length; s++) {
+			if (z < dcdata[s].length) {
+				data[index++] = dcdata[s][z];
+			}
+		}
+	}
+
+	for (var xx = 0; xx < maxEcCount; xx++) {
+		for (var t = 0; t < rsBlocks.length; t++) {
+			if (xx < ecdata[t].length) {
+				data[index++] = ecdata[t][xx];
+			}
+		}
+	}
+
+	return data;
+
+};
+
+__m["index"] = QRCode;
+
+})();
+
+global.QRCodeGen=function(text,ecl){var QRCode=__m["index"],EC=__m["QRErrorCorrectLevel"];var lvl=EC[ecl||"M"];for(var t=1;t<=40;t++){try{var q=new QRCode(t,lvl);q.addData(text);q.make();return q;}catch(e){if(t===40)throw e;}}};
+})(typeof window!=="undefined"?window:globalThis);
+</script>
+<script>window.SPEC={"title":"몸의 법정 — 다섯 부위 사건 심리","subtitle":"사전 QR 진술 → 증거조사 → 재검사 → 각자 판결. 수원가정법원 2회차 점심 50분, 의자와 공 하나, 매트 없음. 강사는 감정인, 재판장은 참가자 각자.","court_metaphor":{"재판장":"참가자 각자 — 자기 몸 사건의 유일한 판단권자. 강사는 판단하지 않고 증거만 제출한다","감정인(전문가 증인)":"강사 김진 — 가설과 증거를 제출하는 사람. 의료인이 아니며 진단·치료를 하지 않고, 이 방법으로 일하는 이해관계인임을 스스로 고지한다","입증책임":"증명은 주장하는 쪽, 즉 감정인의 몫이다. 참가자는 증명할 의무 없이 판단만 한다","사건 접수·진술":"각 부위 사전 QR. '지금 이 순간, 방금 한 체크 동작에서 느낀 불편감 0~10'을 익명 제출 = 당사자 본인 진술. 0도 진술이다","증거능력 고지":"rules 슬라이드 — 자기보고·대조군 없음·기대효과(비맹검)·단회 측정·감정인 이해관계를 먼저 인정","쟁점 정리":"판사의 질문 7개를 쟁점 1~7로 번호 매겨 화면에 공개하고, 어디서 답하는지 예고","주장(가설)":"부위마다 '피해자는 아픈 곳, 유력한 용의자는 굳은 곳' 한 문장 — 목→등, 허리→엉덩이, 어깨→승모근·겨드랑이, 무릎→발·앞허벅지, 발→아치. 대질 전에는 '용의자', 판결은 재판장 몫","서증(문헌)":"IASP 2020, WHO 2020, NICE NG59 2016, 고용노동부 근골격계부담작업 고시 — 각 confidence 표기, 발화는 부위당 1개만","검증(현장 확인)":"부위별 자가 확인 동작 — 회전·만세·3걸음·일어서기. 재판장이 자기 몸을 직접 확인","감정(개입 실험)":"10초 리셋을 한쪽만 실시. 안 푼 쪽이 자기 대조군","대질(좌우 비교)":"안 푼 쪽 vs 푼 쪽. 한쪽만 푸는 것은 기대효과를 없애지 못한다 — 어느 쪽을 풀었는지 본인이 알기 때문이다. 다만 시간·피로·기분처럼 양쪽에 동시에 걸리는 요인을 빼고, '전체가 좋아진 기분'과 '푼 쪽만 다른 감각'을 구분하는 데는 도움이 된다. 가림 실험은 오늘 하지 않으므로 이 한계는 판결 한계에 남긴다","대조군":"안 푼 쪽(반대편). 기관 차원의 대조군은 없음을 고지. 반대쪽은 사후 QR 입력 뒤에만 푼다","재검사(재진술)":"사후 QR. 같은 부위·같은 동작 직후·같은 0~10 기준으로 다시 진술","사실인정":"각자의 숫자 변화(사전→사후)와 좌우 차이. 화면 평균은 참고, 사실인정은 개인 숫자로","판결(주문·이유·조건·한계)":"피날레 4단 구성. 주문은 '달라지게 했다고 볼 여지가 있다'까지만","집행":"한 시간에 한 번 1분 리셋 + 서기·걷기·앉기 5%. 판결은 집행돼야 효력이 있다","재심":"재발 시 같은 0~10 기준으로 재측정 후 리셋 반복. '효과는 돌아온다'를 정직하게 고지","이송(관할 위반)":"저림·힘 빠짐·대소변 장애·발열·야간통·외상·급성 심한 통증 = 오늘 기억할 대표 일곱 가지. 이 밖에 원인 모를 체중 감소·암 병력·스테로이드 장기 복용·2~4주 이상 지속·악화도 의료기관 평가가 먼저. 최종 판단은 의료인의 몫","각하(심리 생략)":"수술 직후·급성·부종·열감·임신 중·항응고제 복용·멍 잘 드는 분·골다공증 진단·발 감각 저하는 압박 실습을 생략하고 동작만. 뛰기는 무릎 통증·임신·균형 불안·구두 착용 시 대체 동작","피고인(용의자→범인)":"굳은 근육 — 등 상부·엉덩이·승모근·겨드랑이·앞허벅지·발 아치. 아픈 부위는 피해자. 대질 뒤 '이제 범인이라 불러도 되겠습니까 — 판단은 재판장님이'로 회수","심봤다":"압박 시 아픈 지점을 찾았을 때의 구호 = '용의자 검거'. 세게 누르라는 뜻이 아니다","벌금(유머 장치)":"숨 참기 1만 원, 고개 끄덕임 1만 원(내 몸을 인지했는가를 묻는 게임, 끄덕이지 말라는 처방 아님), 발 아치 붕괴 1만 원. 징수관은 옆자리 재판장. 실제 징수 없음, 폐정 때 공(실습 교구)으로 대납 결산","의사봉":"공을 책상에 한 번 톡 — 부위마다 '증거조사 개시' 선언","5%만":"집행 강도 — 95%는 업무 생각, 5%만 몸에","1층·2층·3층":"발=1층, 무릎=2층, 엉덩이·골반=3층. 아래층이 위층 사건에 영향을 준다는 가설","강도 기준":"'숨이 쉬어지는 아픔까지, 숨이 막히면 너무 센 것' — 연구 근거가 아니라 감정인의 현장 기준. 숫자 척도는 쓰지 않는다(QR 0~10과 혼동 방지)","용어 통일":"형사 비유로 통일(피해자·용의자·검거). 원고·피고(민사) 용어, '검사·진단·치료·환자' 단어는 쓰지 않는다"},"slides":[{"id":"open","type":"open","min":1,"title":"개정 — 오늘 재판장은 여러분 각자입니다","eyebrow":"몸의 법정 · 사건번호 2026-몸-2 · 개정","lead":"다섯 건을 심리합니다 — 발·목·어깨·허리·무릎. 저는 판결하지 않습니다. 감정인으로서 가설과 증거만 제출하고, 판단은 각자 자기 몸에서 하십니다.","cards":[{"k":"진술","t":"사전 QR · 0~10","d":"숫자 하나와 기기별 무작위 번호만 받습니다(익명 클라우드 저장). 집계만 공개, 원자료는 30일 내 삭제."},{"k":"증거조사","t":"문헌 + 확인 + 실험","d":"한쪽만 풀고 안 푼 쪽과 대질합니다. 반대편이 대조군입니다."},{"k":"재검사·판결","t":"사후 QR → 각자 판결","d":"달라졌는지, 같은지, 더 불편한지 — 숫자로 판단합니다."}],"quote":"\"통증은 실제 또는 잠재적 조직 손상과 관련되거나 그와 유사한, 불쾌한 감각적·정서적 경험이다.\" — IASP 통증 정의 개정(2020). 통증은 실재합니다. 다만 손상의 크기와 같은 뜻은 아닙니다.","ruling":"이 법정은 통증이 허상이라고 말하지 않는다. 통증은 실재하며, 오늘은 그것이 '달라지는지'만 확인한다.","action":"목·어깨·허리·무릎·발 중 불편감 1 이상인 부위가 하나라도 있는 분 손. 그 숫자를 기억하세요 — 오늘 다섯 번 다시 적습니다.","notes":"[0:00–0:15] 첫 문장 그대로, 낮고 천천히: \"지금부터 사건번호 2026-몸-2, 통증 사건 심리를 개정합니다. 오늘 재판장은 여러분 각자, 저는 감정인입니다.\" 2초 침묵. [0:15–0:30] 감정인 소개 12초, 문구 고정: \"스포츠의학 박사, 운동·재활운동 지도 20년, 기업·공공기관 강의. 저는 의료인이 아니며 진단·치료를 하지 않습니다.\" 무릎 연골 이식 수술 경험은 무릎 사건에서 30초 재등장. 화면 어디에도 '치료·환자·진단·검사' 단어 금지. [0:30–0:50] 카드 3장 훑기. 진술 카드에서 데이터 한 문장: \"숫자 하나와 기기 무작위 번호만, 외부 클라우드에 익명 저장, 집계만 공개·기관 공유, 원자료는 30일 내 삭제.\" (담당자에게 사전 서면 고지, 참가자 페이지의 연령대 등 선택 항목은 끄거나 '선택' 표기.) \"감정인은 이해관계가 있는 증인이라 여러분이 먼저 제 증거능력을 심사하셔야 합니다. 다음 장에서 제가 스스로 고지하겠습니다.\" [0:50–1:00] 손들기 후 바로 다음 장. 금지: '통증은 허상', '즉시 낫는다', '90%가 아프다'. 콜백 전제 주의: 2회차는 다른 참가자. '1회차 분들은 아시죠'류 발화 금지. 겹치는 분이 있어도 지목하지 않는다. 공은 '선물'이 아니라 '기관과 사전 협의된 실습 교구'로만 호칭(비용 처리는 담당자와 서면 확정)."},{"id":"rules","type":"rules","min":1.5,"title":"증거능력 고지 — 반박부터 인정하겠습니다","eyebrow":"증거능력 심사 · 감정인 자기 고지 · 쟁점 3","question_no":3,"lead":"판사님들이 속으로 던지실 반박을 제가 먼저 인정합니다. 그래서 오늘의 기준은 '즉시 낫는다'가 아니라 '달라지는지 확인한다'입니다.","cards":[{"k":"한계 1","t":"자기보고 · 직후 · 1회","d":"0~10은 본인 진술입니다. 기분·기억이 섞이고, 내일까지 가는지는 별개 쟁점입니다."},{"k":"한계 2","t":"대조군 없음 → 한쪽만","d":"기관 차원 대조군은 없습니다. 한쪽만 풀어 시간·피로·기분처럼 양쪽에 걸리는 요인만 뺍니다."},{"k":"한계 3","t":"기대효과는 남습니다","d":"한쪽만 풀어도 어느 쪽을 풀었는지 본인이 압니다(비맹검). 가림 실험은 오늘 하지 않습니다."},{"k":"한계 4","t":"감정인의 이해관계","d":"저는 이 방법으로 일하는 사람입니다. 그래서 효과를 선언하지 않고 여러분이 측정합니다."}],"safety":"쟁점 3의 답 — 오늘 기억할 대표 일곱 가지(관할 밖): 저림 · 힘 빠짐 · 대소변 장애 · 발열 · 야간통 · 외상 · 급성 심한 통증. 하나라도 있으면 오늘 압박은 생략하고 의료기관 평가가 먼저입니다. 일곱 가지가 없어도 2~4주 이상 지속·악화, 원인 모를 체중 감소, 암 병력, 스테로이드 장기 복용은 평가 대상. 목·어깨 통증에 가슴 답답함·식은땀이 함께 오면 실습이 아니라 응급입니다. 각하(압박 생략, 동작만): 수술 직후 · 부종·열감 · 임신 중 · 항응고제 복용·멍 잘 드는 분 · 골다공증 진단 · 발 감각 저하. 뛰기 생략 대상(무릎 통증·임신·균형 불안·구두)은 대체 동작. 관할 안(오늘 실습 참가 기준 — 가이드라인이 아닌 감정인의 실무 기준): 자세를 바꾸면 덜해지고, 눌렀을 때 '시원한 불편감'이며, 숨이 쉬어지는 아픔까지. 숨이 막히면 너무 센 것입니다. 이 목록은 오늘 참가 여부용이며, 병원 갈지 말지의 최종 판단은 의료인의 몫입니다.","evidence":[{"kind":"문헌","text":"요통 진료에서 심각한 원인을 시사하는 징후(레드플래그)는 별도 평가 대상이며, 그 외 대부분은 일상 활동 지속과 운동을 권고. 요통 지침이며 다른 부위는 같은 원칙을 유추 적용","source":"NICE NG59 Low back pain and sciatica (2016) · 타 부위 유추 medium","confidence":"high"},{"kind":"문헌","text":"통증과 통각은 다른 현상이며 통증은 감각 신경 활동만으로 추론할 수 없다 — 그래서 세기만으로 가르지 않고 동반 징후를 함께 본다(관할 기준 도출은 감정인의 적용)","source":"IASP 통증 정의 개정 (2020) 주석","confidence":"high"},{"kind":"문헌","text":"기대효과·평균으로의 회귀·자기보고 편향·비맹검은 전후 비교의 대표적 교란 요인. 레드플래그는 선별 도구이지 배제 도구가 아님","source":"연구방법론 · 임상 가이드라인 일반 원칙","confidence":"high"},{"kind":"실무 기준","text":"'자세 바꾸면 덜함·시원한 불편감·숨이 쉬어지는 강도'는 연구 근거가 아니라 오늘 실습 참가를 가르는 감정인의 현장 기준","source":"감정인 현장 기준 (근거 문헌 아님)","confidence":"medium"}],"counter":"\"강사가 좋아진다고 했으니 좋아졌다고 느끼는 것 아닌가?\" — 맞을 수 있습니다. 한쪽만 풀어도 기대는 남습니다 — 어느 쪽을 풀었는지 본인이 아니까요. 한쪽만 푸는 이유는 두 가지입니다. ① 시간·피로·기분처럼 양쪽에 동시에 걸리는 요인을 빼기 위해, ② 방법을 배우는 동안 반대편을 원래 상태로 보존하기 위해. 그래서 오늘의 주문은 '효과가 있다'가 아니라 '달라졌다고 볼 여지가 있다'까지입니다.","ruling":"오늘의 결과는 '교육 직후 익명 자기보고, 대조군 없음, 비맹검, 의학적 효과 아님'이라는 꼬리표를 달고만 공개된다.","action":"각 부위 사전 QR 전 10초 자가 확인: 일곱 가지에 하나라도 해당되면 그 부위는 '동작만'. 손 들 필요 없이 본인만 알면 됩니다.","notes":"[0:00–0:40] 카드는 읽지 않고 한 줄씩 가리키며: \"자기보고, 대조군 없음, 기대효과, 그리고 제 이해관계. 법정에서 증거능력 없는 증거로 판결하지 않으시죠. 제가 먼저 고지합니다.\" 한계 3 발화 고정: \"한쪽만 푸는 것은 기대효과를 없애지 못합니다 — 어느 쪽을 풀었는지 본인이 아니까요. 다만 '전체가 좋아진 기분'과 '푼 쪽만 다른 감각'을 구분하는 데는 도움이 됩니다. 눈을 가리는 실험은 오늘 하지 않으니 이 한계는 판결 한계에 그대로 남깁니다.\" [0:40–1:10] 쟁점 3 답: \"움직여도 되는 것과 병원이 먼저인 것 — 오늘 기억할 대표 일곱 가지입니다. 저림, 힘 빠짐, 대소변, 발열, 야간통, 외상, 급성. 이 밖에도 원인 모를 체중 감소, 암 병력, 스테로이드 장기 복용은 의료기관이 먼저입니다. 이 목록은 오늘 실습 참가 여부용이고, 병원 갈지 말지의 최종 판단은 의료인의 몫입니다.\" 해당자는 손 들지 않아도 됨. [1:10–1:30] 강도 기준 1회 선언, 숫자 없이: \"숨이 쉬어지는 아픔까지가 정답. 숨 막히면 너무 센 것. 이건 연구 근거가 아니라 제 현장 기준입니다.\" 이후 부위에서는 신호어 '숨!'만. 관할 안 세 가지도 '감정인의 실무 기준'이라고 층위를 밝힌다. '진단·검사'라는 단어는 쓰지 않는다. 1회차 Q&A에 협착 진단자가 있었으나 개별 지목 금지, 전체 규칙으로만 처리. 마지막 문장: \"그 이상은 말하지 않겠습니다.\""},{"id":"issues","type":"issues","min":0.5,"title":"쟁점 정리 — 오늘 답할 판사의 질문 7개","eyebrow":"쟁점 정리 · 어디서 답하는가","lead":"쟁점 3은 방금 답했습니다. 1·2는 다음 두 장, 4는 목·허리·폐정, 5는 목·어깨·허리, 6은 무릎·판결, 7은 폐정에서 — 별도 시간 없이 심리 안에서 답합니다.","ruling":"쟁점 7개는 모두 '한 문장 결론 + 근거 + 오늘 현장에서 확인하는 방법'으로 답한다.","action":"가장 궁금한 쟁점 번호 하나를 정해 두세요. 폐정 때 그 답이 본인 몸에서 확인됐는지 판단합니다.","notes":"[0:00–0:30] 화면의 쟁점 카드 7장은 answers에서 자동 생성된다(이 슬라이드에 cards를 넣지 말 것 — 중복 표시됨). 읽지 말고 화면을 보게 한다. \"판사님들이 사건 심리 전에 쟁점부터 정리하시듯, 오늘 답할 질문 7개입니다. 3번은 방금 답했습니다. 답을 못 하면 감정인 기피 사유입니다.\" 어디서 답하는지는 lead 한 줄로. 웃음 1회만. 바로 다음 장. 데모 모드로 화면 확인 필수."},{"id":"q1","type":"issue","min":0.75,"question_no":1,"title":"쟁점 1 — 왜 오래 일하면 목과 허리가 아픈가","eyebrow":"쟁점 1 · 가설과 서증","hypothesis":"가설: 범인은 '나쁜 자세'가 아니라 '한 자세'입니다. 오래 같은 자세로 있으면 목·허리를 받치는 근육이 쉬지 못하고 계속 일하는 정적 부하가 쌓입니다. 기록 검토·경청·집중은 이 정적 부하가 특히 긴 직무라는 가설입니다.","evidence":[{"kind":"문헌","text":"하루 4시간 이상 집중적 키보드·마우스 조작 작업을 근골격계부담작업으로 지정해 사업주 유해요인조사 의무 부과 — 장시간 고정 사무작업의 한 유형을 국가 기준이 부담작업으로 지정(기록 검토는 직접 대상 아님, 취지만 원용)","source":"고용노동부 「근골격계부담작업의 범위 및 유해요인조사 방법에 관한 고시」","confidence":"high"},{"kind":"문헌","text":"성인에게 좌식 시간을 줄이고 어떤 강도의 활동으로든 대체할 것을 권고","source":"WHO 신체활동 및 좌식행동 가이드라인 (2020)","confidence":"high"},{"kind":"문헌","text":"자세 유지 근육이 낮은 강도로 장시간 수축하면 혈류가 줄고 피로·뻐근함이 누적된다 — 근생리학 일반 원칙, 구체 수치는 인용하지 않음","source":"일반 원칙(정적 부하)","confidence":"medium"}],"counter":"\"오래 써서 닳은 것(퇴행) 아닌가?\" — 영상 소견은 통증이 없는 사람에게도 흔하다는 것이 일반 원칙이고, 소견과 통증은 같은 말이 아닙니다(IASP 2020). 오늘은 소견을 바꾸는 게 아니라 '지금 불편감'이 달라지는지 봅니다. 개별 원인은 의료기관 판단입니다.","ruling":"오래 일해서라기보다 오래 '같은 자세로' 일해서일 가능성이 큽니다 — 오늘 그 가설을 확인합니다. 해법은 쉬는 시간이 아니라 자세를 바꾸는 능력입니다.","action":"목 사건에서 확인: 목을 만지지 않고 등받이에 등 상부만 붙여 등을 세운 뒤 좌우 회전을 다시 합니다. 목을 건드리지 않았는데 회전 느낌이 달라지면, 적어도 '자세가 목 감각에 영향을 준다'는 것은 각자 확인한 셈입니다.","notes":"[0:00–0:25] \"판사님, 하루에 기록을 몇 시간 보십니까?\" 고시 발화 고정: \"고용노동부 고시는 하루 4시간 이상 키보드·마우스를 집중 조작하는 작업을 '근골격계부담작업'으로 정해 사업주에게 유해요인조사를 하게 합니다. 기록 검토가 그 조문에 바로 해당한다고 말씀드리는 건 아닙니다. 다만 '오래 같은 자세'를 국가가 부담 요인으로 보는 취지는 같습니다.\" (고시 제4호 '임의로 자세를 바꿀 수 없는 조건에서 2시간 이상 목·허리를 구부리거나 트는 작업'은 '조건부'로만 언급 가능, 판사 업무 해당 여부는 단정하지 않음.) \"범인은 나쁜 자세가 아니라 한 자세라는 가설입니다. 근육이 교대 근무를 못 한 겁니다.\" [0:25–0:45] 쟁점 2 실험 예고 후 즉시 시작: \"지금부터 60초, 가장 바르다고 생각하는 자세로 앉아 계십시오. 제가 다음 장을 말하는 동안 유지합니다.\" 근거는 기관명+연도만, 수치는 고시 '4시간'만. 금지: '디스크가 생긴다' → '부담이 쌓입니다', '국가가 인정했다' → '고시의 취지'."},{"id":"q2","type":"issue","min":0.75,"question_no":2,"title":"쟁점 2 — 좋은 의자·바른 자세만으로 안 되는 이유","eyebrow":"쟁점 2 · 가설과 60초 실험","hypothesis":"가설: 좋은 의자는 좋은 변호사입니다 — 부담을 잘 나눠 주지만 대신 걸어 주지는 않습니다. 어떤 좋은 자세도 오래 고정되면 다시 정적 부하가 되고, 굳은 엉덩이·등으로는 바른 자세를 만들기 어렵다는 가설입니다. 가장 좋은 자세는 '다음 자세'입니다.","evidence":[{"kind":"실험","text":"지금 60초 — 가장 바르다고 생각하는 자세를 유지한 뒤 어디가 먼저 뻐근한지 기억. 같은 의자에서 실습 후 점수가 달라지면 의자가 아니라 근육이 변수","source":"현장 실험(자기 관찰)","confidence":"medium"},{"kind":"문헌","text":"요통에 일상 활동 지속과 운동을 권고 — 고정이 아니라 움직임이 표준(요통 지침, 타 부위는 유추)","source":"NICE NG59 (2016)","confidence":"high"},{"kind":"문헌","text":"모든 사람에게 맞는 단일한 '이상적 자세'의 근거는 약하며 자세를 자주 바꾸는 것이 더 중요하다는 견해가 전문 문헌에서 제시됨","source":"일반 원칙(자세와 통증)","confidence":"medium"}],"counter":"\"비싼 의자를 사면 되지 않나?\" — 의자는 도움이 됩니다. 다만 의자는 '하중 배분'을 바꾸고, 오늘 실험은 '근육 상태'를 바꿉니다. 같은 의자에서 느낌이 달라지면 의자가 결정 변수가 아니었다는 뜻입니다.","ruling":"의자와 자세는 필요조건이지 충분조건이 아니다. 바른 자세는 지키는 것이 아니라 바꾸는 것이다 — 가장 좋은 자세는 다음 자세.","action":"방금 60초 — 어디가 먼저 뻐근했습니까? 그것이 오늘 첫 진술입니다. 허리 사건에서 같은 의자에 앉은 채 한쪽 엉덩이만 풉니다. 의자는 그대로인데 다리 들기·3걸음이 좌우로 다르면 의자가 변수가 아니었다는 증거입니다.","notes":"[0:00–0:30] 60초 실험 진행 중 — 근거 두 개를 기관명+연도로만 읽는다(논문 저자명은 화면·발화에서 제외, references에만). \"좋은 의자는 좋은 변호사입니다. 부담을 나눠 주죠. 그런데 변호사가 대신 걸어 주진 않습니다.\" [0:30–0:45] \"자, 어디가 먼저 뻐근합니까? 목? 어깨? 바른 자세로 60초 버틴 것도 정적 부하입니다. 가장 좋은 자세는 다음 자세입니다. 이 문장 하나 기억하십시오.\" 대비 문장(아무렇지 않은 분이 많을 때): \"60초에 아무렇지 않으신 분 — 정상입니다. 고시가 부담작업으로 보는 기준은 같은 자세 4시간입니다. 그 4시간을 60초로 줄여 보여드릴 수는 없으니, 허리 사건에서 다른 방식(같은 의자, 한쪽만)으로 확인합니다.\" 금지: '60초 이상 고정되면 ~된다'류 수치 단정 — '오래 고정되면'으로."},{"id":"bridge","type":"bridge","min":0.5,"title":"심리 개시 — 다섯 사건, 같은 절차","eyebrow":"심리 절차 · 부위마다 8분","lead":"1층(발)부터 올라갑니다. 진술(사전 QR 1.5분) → 확인·감정·대질(실습 5분) → 재진술(사후 QR 1.5분). 실험은 한쪽만 — 반대편이 대조군입니다.","cards":[{"k":"규칙 1 · 대조군","t":"한쪽만 풉니다","d":"반대쪽은 사후 QR 입력 뒤 45초 속성. 기대는 남지만, 양쪽에 걸리는 요인은 뺍니다 — 증거 보전."},{"k":"규칙 2 · 호흡","t":"누르고 5초, 소리 나게 내쉬기","d":"굴리지 않습니다. 옆사람 귀에 들려야 유효. 안 들리면 옆자리 재판장이 벌금 1만 원(실제 징수 없음)."},{"k":"규칙 3 · 아플 때","t":"내쉬고 → 미간 풀고 → 심봤다","d":"'통증은 근육의 집 주소'는 비유입니다. 주소를 찾으면 '심봤다'. 세게가 아니라 숨이 쉬어지는 강도 — 숨!"}],"ruling":"한쪽만 푸는 것은 게으름이 아니라 실험 설계다. 기대효과는 없애지 못하지만 반대쪽을 원래 상태로 보존한다. 반대쪽은 재검사 뒤에 푼다.","action":"콜앤리스폰스: \"아플 때 어떻게 한다?\" → \"내쉬고, 미간 풀고, 심봤다.\" 공을 손에 쥐고 첫 사건(발) 사전 QR로.","notes":"[0:00–0:10] 공을 책상에 한 번 톡(의사봉). \"증거조사를 개시합니다.\" 이 리듬을 부위마다 반복. [0:10–0:25] 세 규칙을 콜앤리스폰스로 고정: \"아플 때 어떻게 한다?\" → \"내쉬고, 미간 풀고, 심봤다.\" 규칙 1 발화: \"한쪽만 풀어도 기대는 남습니다. 대신 시간·피로·기분처럼 양쪽에 걸리는 요인은 빠지고, 반대편은 원래 상태로 보존됩니다.\" [0:25–0:30] 벌금 선포: \"숨 참기 1만 원, 고개 끄덕임 1만 원, 발 아치 붕괴 1만 원. 법원이니 벌금은 익숙하시죠. 징수관은 옆자리 재판장님. 실제 징수는 없습니다.\" 끄덕임 벌금은 '내 몸을 인지했는가' 게임이지 끄덕이지 말라는 처방이 아님을 목 사건에서 밝힌다. 반대쪽 규칙을 반드시 말한다: \"반대쪽은 재검사 숫자를 넣은 다음에 풉니다. 그 전에 풀면 대조군이 사라집니다.\" 사후 QR 숫자는 '누를 때 아픔'이 아니라 '동작 시 불편감'임을 부위마다 한 번씩 말한다."},{"id":"verdict","type":"verdict","min":2.5,"title":"판결 — 오늘 이 강의장은 얼마나 달라졌습니까","eyebrow":"판결 · LIVE RESULT · 쟁점 6","question_no":6,"lead":"화면의 평균은 참고, 판결은 각자의 숫자로. 쟁점 6 — 오늘 체육관식 운동은 0분이었습니다. 운동은 체육관 1시간, 관리는 체육관 밖 23시간입니다.","hypothesis":"쟁점 6 — 운동은 체육관 1시간의 '양', 관리는 체육관 밖 23시간의 '상태'입니다. 오늘 체육관식 운동(근력·유산소)은 하지 않았습니다. 풀고, 숨 쉬고, 자세를 바꾸고, 짧은 동작으로 확인만 했습니다. 그런데 숫자가 달라졌다면 — 그것이 '관리'가 무엇인지에 대한 단서입니다.","evidence":[{"kind":"문헌","text":"신체활동 권고(주 150~300분 중강도 + 근력 주 2회)와 좌식행동 감소 권고는 별개 항목 — 운동을 채워도 좌식 시간은 따로 줄여야 함","source":"WHO 신체활동 및 좌식행동 가이드라인 (2020)","confidence":"high"},{"kind":"실험","text":"오늘 이 강의장의 전후 응답: 사전 1 이상 {pos}건 중 {pct}%가 1점 이상 내려감, 평균 {drop}점, 전후 짝 {pairs}건 — 교육 직후 익명 자기보고, 대조군 없음, 비맹검","source":"실시간 집계(익명)","confidence":"medium"},{"kind":"문헌","text":"공·롤러를 이용한 자가 근막 이완은 단기 관절가동범위 증가와 주관적 이완이 반복 보고되나 효과는 단기·개인차가 크고 구조를 바꾸는 근거는 아님","source":"일반 원칙(자가 근막 이완의 단기 효과)","confidence":"medium"}],"counter":"\"운동을 열심히 하는데 왜 아픈가?\" — 운동은 관리의 일부이지 전부가 아닙니다. 체육관 1시간이 아니라 체육관 밖 23시간이 몸의 상태에 더 오래 관여합니다. \"기대효과만으로도 점수는 내려가지 않나?\" — 맞습니다. 한쪽만 풀어도 기대는 남습니다. 그래서 변화의 원인을 특정하지 않고 '달라졌다고 볼 여지'까지만 말합니다. 변화가 없었던 분은 원인이 오늘 다룬 근육이 아닐 수 있습니다 — 그것도 중요한 정보입니다.","ruling":"주문: 오늘의 개입(아픈 곳이 아닌 굳은 곳을 풀고, 등·골반·발을 세운 것)은 이 강의장의 불편감을 달라지게 했다고 볼 여지가 있다. 조건: 관할 밖 징후는 의료기관이 먼저다. 한계: 교육 직후 익명 자기보고, 대조군 없음, 비맹검, 의학적 효과 아님.","action":"개인 판결 30초(필기 없이): 오늘 가장 많이 내려간 부위 하나, 그 범인 하나, 내일 1분 행동 하나를 마음에 정합니다. 휴대폰 메모도 좋습니다. 변화가 없었던 분은 '원인 미확정'으로 두고 재심(재측정) 날짜만 정합니다.","notes":"[0:00–0:20] 공개 전 고지: \"판결 선고 전에 한 가지. 좋아진 분만 손 드는 자리가 아닙니다. 그대로인 분, 더 불편한 분도 오늘 증거의 일부입니다.\" 20초 침묵 후 '판결 선고' 버튼. [0:20–1:10] 보드 읽는 순서 고정: ① 참여자 수 \"이 법정의 진술 건수\" ② 변화 없음·증가 비율을 먼저 \"이분들이 있어서 이 숫자가 믿을 만합니다. 전부 좋아졌다면 제가 먼저 의심합니다\" ③ 분모를 소리 내어: \"사전 0점은 내려갈 수 없으니 판정에서 제외했습니다. 사전 1점 이상 응답 중 1점 이상 내려간 비율입니다. 1점은 오차일 수 있어 2점 이상도 따로 보여드립니다\" ④ 평균 감소 \"5분 개입치고 크게 들리십니까, 작게 들리십니까 — 판단해 보실 만합니다\" ⑤ 부위별 표에서 최대·최소 감소를 나란히 \"용의자 가설이 가장 잘 맞은 부위와 덜 맞은 부위\". N<5 부위는 '참고용'이라고 말한다. 단위는 '건'으로 통일. [1:10–1:40] 주문·이유·조건·한계 낭독. 한계는 반드시 소리 내어 — '비맹검', '1회차와 조건 다름' 포함. [1:40–2:20] 쟁점 6 답: \"헬스장 다니시는 분? 그런데도 목이 아프시죠. 운동은 체육관 1시간, 관리는 체육관 밖 23시간입니다. 오늘 체육관식 운동 0분에 이 숫자입니다. 운동하지 말라는 뜻이 아닙니다.\" 무릎 소결의 '순서(풀기→방향→강화)'는 쟁점 6의 부속 단서라고만 말한다. 1회차 문장 재활용: \"풀어서 가벼워진 팔, 주차장에 두시면 다시 굳습니다.\" [2:20–2:30] 벌금 결산: \"오늘 벌금 총액은 전액 공으로 대납 처리됐습니다. 싸게 먹혔죠.\" \"오늘 답이 안 된 쟁점이 있으면 나가시면서 담당자께 말씀해 주십시오. 다음 회차의 첫 쟁점이 됩니다.\" \"이 판결은 강의장 전체의 판결입니다. 여러분 각자의 판결문은 휴대폰에 있습니다.\" 강사 사례는 '표본 1명'이라고 스스로 말한다. '구조는 안 바뀌므로 변화분은 근육 몫'이라는 소거법은 쓰지 않는다. '운동 0분' 표현은 반드시 '체육관식 운동 0분'으로."},{"id":"close","type":"close","min":2,"title":"폐정 — 집행과 재심: 오늘 가져갈 세 가지","eyebrow":"폐정 · 집행 · 재심 · 쟁점 4·7","question_no":7,"lead":"쟁점 7의 답입니다. 판결은 집행돼야 효력이 있고, 재발하면 재심입니다. 효과는 돌아옵니다 — 그래서 한 시간에 한 번 1분입니다.","cards":[{"k":"하나 · 범인","t":"아픈 곳 말고 굳은 곳","d":"목→등, 허리→엉덩이, 어깨→승모근·겨드랑이, 무릎→발·앞허벅지. 피해자만 주무르면 돌아오기 쉽습니다."},{"k":"둘 · 내쉬기","t":"아프면 참지 말고 5초 내쉰다","d":"내쉬고 → 미간 풀고 → 심봤다. 내쉬면서 힘을 빼는 것이 오늘의 연습입니다. 벌금 1만 원."},{"k":"셋 · 1분 리셋","t":"한 시간에 한 번, 1분","d":"A 법대: 발 3점·체중 옮기기 → 등 세우고 내쉬기 ×3 → 미간 → 회전 확인. B 집무실: A + 모서리 누르며 만세 ×2."},{"k":"재심","t":"돌아오면 다시 잰다","d":"재발은 실패가 아니라 재심 사유. 아침·잠들기 전 0~10, 같은 동작. 저림·힘 빠짐이 늘면 의료기관."}],"ruling":"세 가지: 범인을 찾는다, 내쉰다, 한 시간에 한 번 1분 리셋. 나머지는 잊어도 된다.","action":"지금 전원 A(법대) 버전 60초 실연(강사 카운트) — 이것이 각자 판결의 첫 집행입니다. 끝나면 옆사람에게 한 문장: \"내 범인은 ○○이고, 내일 1분 행동은 ○○이다.\" 말한 것이 집행됩니다.","quote":"\"그 이상은 말하지 않겠습니다. 판단은 재판장 여러분의 몫입니다. 이상으로 사건번호 2026-몸-2, 통증 사건 심리를 폐정합니다.\"","safety":"사진은 동의하신 분만, 종료 후 자율 — '안 푼 팔 내리고 푼 팔만 만세'. 대외 사용은 기관 서면 승인 후, 얼굴이 식별되는 사진은 본인 동의 없이 사용하지 않습니다. 복습 자료는 기관 공식 경로로 전원 동일 제공(상품·앱 가입·상담 유도·이름 수집 없음), 개인 연락처는 받지 않습니다.","notes":"[0:00–0:20] 쟁점 7: 손가락 세 개 — \"범인, 내쉬기, 1분 리셋.\" 판사님들은 요약을 잘 하시니 세 단어면 됩니다. 집행 주기는 한 문장으로만: \"한 시간에 한 번 1분.\" [0:20–1:20] 쟁점 4 답을 몸으로 — A 법대 버전 전원 실연, 강사가 초를 센다(손·공 없음, 소리 없이): \"0~10초 발 3점, 뒷주머니 쪽으로 체중 한 번. 10~40초 등받이에 등 위쪽, 배 조이고, 소리 안 나게 5초 내쉬기 셋. 40~55초 미간 힘 빼기. 55~60초 고개 좌우 — 달라졌습니까? 이게 법대 위 1분입니다. 집무실에서는 여기에 모서리 누르며 만세 둘을 더합니다(B).\" 마지막 벌금 콜백: \"방금 고개 끄덕인 걸 아신 분? 그 '앎'이 오늘의 발견입니다.\" [1:20–1:50] 옆사람에게 한 문장 낭독(30초). \"말한 것만 집행됩니다.\" [1:50–2:00] 폐정 선언은 quote 한 버전만 + 공 톡. 벌금 결산·미답 쟁점 안내는 판결 슬라이드 끝에서 이미 처리. 사진 안내는 화면 safety로만, 발화 생략. 앱·베타·특허 언급 금지(무상 서비스는 개인에게 제안하지 않고 필요 시 기관 공식 절차로만). 반대쪽 숙제는 각 부위 사후 QR에서 이미 45초 처리했으므로 '오늘 밤 3분 더'로만. ■ 종료 후 개별 Q&A 고정 대본(반드시 준수, 담당자에게도 사전 공유): \"오늘은 개별 처치를 하지 않습니다. 진단명이 있으시면 담당 의료진과 상의하시고, 오늘 방법은 '추가'로만 쓰십시오. 저림·힘 빠짐이 있으면 오늘 압박은 하지 않는 것이 제 규칙입니다.\" 금지 항목: ① 진단명·영상 소견에 대한 설명 ② 특정 부위에 손 대기(즉석 압박) ③ '없어진다·10초면 된다·눌리고 있다'류 발언 ④ 개인 연락처·상담 유도. 사전 서면 확인 3항목: 촬영 여부·범위(뒷모습·실습 장면 위주), 강사 SNS·홈페이지·제안서 게시 가부, 기관명·로고 대외 사용 가부."}],"parts":[{"id":"foot","name":"발·발목","hypothesis":"가설: 발은 1층입니다. 아치가 굳어 감각이 둔해지면 위층(무릎·허리)이 영향을 받는다는 가설입니다. 아치를 5초 압박하고 발가락을 교대로 움직인 뒤, 같은 발이 더 가볍고 탄력 있게 느껴지는지 확인합니다.","statement":"사건 1 접수 — 발·발목. 지금 이 순간, 방금 한 확인 동작(가볍게 뛰기 또는 3걸음)에서 느낀 불편감을 0~10으로 진술합니다. 0도 진술입니다. 최근 발목을 삐었거나 발이 붓고 뜨거우면 동작만 하셔도 됩니다.","check":"자가 확인 동작(10초): 제자리에서 가볍게 3번 뛰거나 3걸음. 뛰기가 부담되면(무릎 통증·임신·균형 불안·구두·미끄러운 바닥) 의자를 잡고 한 발씩 체중 옮기기 3회로 대체 — 비교의 효력은 같습니다. 발바닥 느낌과 어느 발이 둔한지 기억합니다.","reset":["한쪽 발만: 의자에 앉아 뒤꿈치는 바닥, 발 아치 중앙에 공. 굴리지 않고 누른 채 소리 나게 5초 내쉬기 ×5 (옆사람 귀에 들리게)","누른 채 엄지↑네 발가락↓ ↔ 엄지↓네 발가락↑ 교대 ×10 — 아프면 '심봤다', 숨은 계속","일어서서 뒤꿈치 바깥 → 앞꿈치 순서로 3걸음, 5%만 발바닥에"],"compare":"대질: 안 푼 발 vs 푼 발로 같은 동작(가볍게 뛰기, 또는 의자 잡고 한 발씩 체중 옮기기). 어느 발이 가볍고 탄력이 있습니까? 안 푼 발이 원래 내 발 — 반대편이 대조군입니다. 차이가 없으면 그것도 증언입니다. 사후 QR에는 누를 때 아픔이 아니라 지금 동작의 불편감을 적습니다.","slogan":"발은 1층입니다. 1층이 흔들리면 위층이 영향을 받습니다.","keep":"걸을 때 뒤꿈치 바깥 → 앞꿈치. 95%는 딴생각, 5%만 발바닥에. 엘리베이터·신호등에서 발가락 살짝 들어 아치 만들기. 1분 리셋의 첫 10초: 앉은 채 발 3점 + 발가락 교대.","safety":"최근 발목을 삐었거나 발바닥이 붓고 뜨거우면 압박은 생략하고 걷기만 합니다. 발 감각이 둔하거나(당뇨 등) 발에 상처·궤양 이력이 있으면 공 압박은 생략하고 발가락 교대와 걷기만 — 발 관리는 담당 의료진 지시 우선. 발바닥에 진단받은 통증(족저근막염 등)이 있으면 뒤꿈치 쪽은 피하고 강도를 낮추거나 생략, 걷기와 발가락 교대만. 저림·찌릿함은 오늘 실습의 중단 신호입니다 — 이유는 판단하지 않습니다. 구두·힐·미끄러운 바닥·균형 불안이면 뛰지 않고 의자를 잡고 체중 옮기기 또는 뒤꿈치 들었다 내리기로 대체. 항응고제 복용·멍 잘 드는 분은 압박 생략, 동작만.","evidence":[{"kind":"문헌","text":"발바닥 감각 입력이 서기·걷기의 균형 조절에 기여한다는 운동학의 일반 원칙 — 구조(평발 여부)가 아니라 사용법을 다룬다","source":"일반 원칙(발바닥 감각과 자세 조절)","confidence":"medium"},{"kind":"현장","text":"1회차(8/31) 현장에서 한쪽 발만 푼 뒤 같은 비교를 했을 때 '가벼워졌다' 반응 — 강사 관찰·자기보고, 기록 없음(참고). 1회차는 매트·누운 자세, 오늘은 의자 버전 — 조건이 다르므로 오늘이 의자 버전의 첫 기록","source":"1회차 강사 관찰","confidence":"medium"},{"kind":"실험","text":"오늘 안 푼 발 vs 푼 발 비교 + 사전/사후 QR","source":"현장 자기 대조","confidence":"medium"}],"counter":"\"평발이라 어쩔 수 없다\" — 발 모양(구조)은 오늘 못 바꿉니다. 오늘 바꾸는 것은 발의 감각과 근육 상태이고, 구조가 같아도 느낌이 달라지는지를 봅니다. '90%가 평발' 식 집단 호명은 하지 않고, 족저근막염이 낫는다고 말하지 않습니다.","ruling":"사건 1 소결 — 발 불편감 평균 {drop}점, 사전 1 이상 응답 중 {pct}%가 1점 이상 내려감(자기보고, 2점 이상은 화면 별도). 각자 판결: 푼 발이 다른가, 같은가. 1분 리셋의 첫 10초는 발 3점 + 발가락 교대.","answers_here":[3],"notes":"[5분] 0:00 공 톡. \"증거조사 개시. 사건 1, 발. 주장: 발은 1층이라는 가설.\" 0:10 확인 동작: 기립, 대체 동작을 먼저 제시한다: \"구두·힐·무릎 아픈 분·임신 중·균형 불안하면 뛰지 마시고 의자 잡고 한 발씩 체중 옮기기 셋. 나머지는 가볍게 셋.\" \"어느 발이 둔합니까? 그 발부터 풉니다.\" 0:40 리셋 1 — 호흡 규칙 통합 설명은 여기서 1회만: \"공은 굴리는 게 아니라 누르는 겁니다. 누르는 것보다 중요한 게 5초 동안 내쉬는 것. 창문에 김 서리듯 소리 나게. 옆사람 귀에 안 들리면 벌금.\" 발 감각 둔한 분·발 상처 이력·항응고제는 압박 생략 선언. 2:00 리셋 2 발가락 교대. \"아프죠? 심봤다.\" 2:50 리셋 3 걷기 3걸음. 3:30 대질(클라이맥스): \"공 빼고. 안 푼 발로 — 이게 원래 내 발. 푼 발로 — 다릅니까?\" 탄성이 나오면 멈추고 되묻기: \"지금 뭐라고 하셨습니까? 증인 진술로 채택하겠습니다.\" 1회차 현장 반응(매트 버전, 강사 메모)은 화면에 띄우지 않고 참고만. 4:20 집행 한 문장 + 1분 리셋 첫 10초 예고. 4:40 \"재검사 들어갑니다. 같은 동작, 같은 기준. 누를 때 아픔이 아니라 동작할 때 불편감입니다.\" [사후 QR 화면] 입력 20초 → 입력 끝난 분부터 반대쪽 45초 속성(공 아치 5초 ×3 + 발가락 교대 ×5) → 보드 읽고 ruling 문장 그대로, 좋든 나쁘든. 금지: '족저근막염이 바로 없어진다' → '몇 점 달라지는지 보겠습니다'."},{"id":"neck","name":"목","hypothesis":"가설: 목은 피해자, 유력한 용의자는 등(상부 흉추)입니다. 등이 굽으면 머리 위치가 바뀌어 목 근육이 더 오래 일한다는 가설입니다. 오늘 목은 한 번도 만지지 않고 등만 세운 뒤 회전 느낌이 달라지는지 확인합니다 — 쟁점 1·4·5를 여기서 답합니다.","statement":"사건 2 접수 — 목. 지금 이 순간, 방금 한 확인 동작(좌우 회전)에서 느낀 불편감을 0~10으로 진술합니다. 돌릴 때 걸리는 느낌도 점수에 넣습니다. 팔 저림·손 힘 빠짐이 있는 분은 압박은 생략하고 등 세우기만 하셔도 됩니다.","check":"쟁점 5 자가 확인 동작(10초): 정면에서 좌우로 편안한 범위까지 같은 속도로 회전. 더 걸리는 쪽을 기억합니다. 오늘의 기준선일 뿐입니다.","reset":["용의자 소환 — 의자 등받이에 등 위쪽을 붙이고 배를 살짝 조여 등 세우기, 소리 나게 5초 내쉬기 ×3. 목은 건드리지 않습니다. 이것이 1분 리셋의 핵심 30초입니다(쟁점 4)","공범 — 뒤통수 아래 움푹한 곳(양쪽)에 엄지, 아주 천천히 좌우 비교, 5초 내쉬기 ×3. 어지럼·시야 흐림·구역감이 오면 즉시 손 떼기","습관 인지 — 경청 중 내 목이 지금 무엇을 하는지 알아차리기. 끄덕임이 해롭다는 근거는 없습니다. 벌금은 '내 몸을 인지하는가'를 묻는 게임이지 끄덕이지 말라는 처방이 아닙니다. 70:30은 상대와 내 몸에 주의를 나누는 비율"],"compare":"대질: 같은 속도로 다시 회전. 각도보다 '덜 걸리는 느낌'을 확인합니다. 목을 건드리지 않았는데 회전 느낌이 달라졌다면, 적어도 '자세가 목 감각에 영향을 준다'는 것은 각자 확인한 셈입니다. 범인 확정은 아닙니다 — 가설 지지까지만. 이제 등을 범인이라 불러도 되겠습니까 — 판단은 재판장님이.","slogan":"목은 피해자, 용의자는 등입니다. 피해자만 주무르지 마세요.","keep":"화면 위쪽을 눈높이 근처로. 한 시간에 한 번 1분 리셋 — 그 핵심 30초가 등받이에 등 상부 붙이고 배 조여 내쉬기 ×3. 법대 위에서는 소리 없이, 티 나지 않게.","safety":"팔 저림·손 힘 빠짐·어지럼이 있으면 압박은 생략하고 등 세우기만. 목을 뒤로 꺾지 않습니다. 뒤통수 아래는 천천히·가볍게, 빠르게 문지르지 않고, 어지럼·시야 흐림·구역감이 오면 즉시 중단합니다. 저림·찌릿함은 오늘 실습의 중단 신호입니다 — 이유는 판단하지 않습니다. 항응고제 복용·멍 잘 드는 분은 압박 생략, 동작만. 목 진료 중인 분은 담당 의료진 지시를 우선합니다.","evidence":[{"kind":"문헌","text":"장시간 고정 사무작업의 한 유형(하루 4시간 이상 집중적 키보드·마우스 조작)을 국가 기준이 부담작업으로 지정 — 기록 검토는 직접 대상 아님, 취지만 원용","source":"고용노동부 근골격계부담작업 고시","confidence":"high"},{"kind":"현장","text":"1회차(8/31) 현장에서 경청 중 고개 끄덕임을 본인이 인지하지 못한 참가자 다수 — 강사 관찰, 기록 없음(참고). 1회차는 매트 버전, 오늘은 의자 버전 — 오늘이 의자 버전의 첫 기록","source":"1회차 강사 관찰","confidence":"medium"},{"kind":"실험","text":"오늘 목을 만지지 않고 등만 세운 뒤 회전 재확인 + 사전/사후 QR","source":"현장 자기 대조","confidence":"medium"}],"counter":"\"고개를 끄덕이면 디스크가 생기나?\" — 그렇게 말하지 않습니다. 끄덕임이 해롭다는 근거는 없고, 끄덕임은 오히려 소진폭 움직임입니다. 오늘 묻는 것은 '방금 내 목이 무엇을 했는지 알았는가'뿐입니다. \"머리가 앞으로 나가서 아프다\"는 문헌에서 일관되지 않으므로 가설로만 둡니다.","ruling":"사건 2 소결 — 목 불편감 평균 {drop}점, 사전 1 이상 응답 중 {pct}%가 1점 이상 내려감(자기보고). 목을 만지지 않고 얻은 숫자입니다. 쟁점 1 답: 목을 만지지 않고 자세 유지 근육(등)만 바꿨는데 달라졌다 — 범인은 나쁜 자세가 아니라 한 자세, 근육이 교대 근무를 못 한 것. 쟁점 4 답: 1분 리셋의 핵심 30초 = 등받이에 등 상부 붙이고 배 조여 내쉬기 ×3.","answers_here":[1,3,4,5],"notes":"[5분] 0:00 공 톡. \"사건 2, 목. 주장: 목은 피해자, 유력한 용의자는 등.\" 0:10 확인 동작(쟁점 5 답): \"좌우 회전 10초. 걸리는 쪽 기억. 이게 목 자가 확인의 전부입니다.\" 0:30 리셋 1(쟁점 4 답, 번호 붙여): \"쟁점 4 — 법대 위 1분의 핵심 30초입니다. 등받이에 등 위쪽, 배 조이고, 소리 없이 내쉬기 셋.\" 1:30 리셋 2 후두하 엄지, 좌우 비교. \"아주 천천히. 빨리 움직이면 힘이 안 빠집니다(현장 관찰).\" 어지럼·시야 흐림 즉시 중단. 해부학적 이유는 말하지 않는다. 2:40 리셋 3 끄덕임 습관 — 법원 맞춤 최고 구간. \"왜 끄덕이시냐면 저에게 집중하시니까요. 경청하는 직업병입니다.\" 벌금 게임: \"끄덕이면 1만 원 — 아, 또 끄덕이셨습니다, 2만 원.\" 웃음 뒤 반드시 착지: \"끄덕임을 없애라는 게 아닙니다. 방금 내가 끄덕인 걸 몰랐다는 것 — 그 '모름'이 오늘의 발견입니다. 관계도 중요하니 70:30.\" 3:30 대질: \"같은 속도로 회전. 목 한 번도 안 만졌습니다. 달라졌습니까? 이제 등을 범인이라 불러도 되겠습니까 — 판단은 재판장님이.\" 4:20 소결 예고. 4:40 재검사: \"같은 동작 직후, 같은 기준.\" [사후 QR 화면] 입력 → 반대쪽 후두하 30초 속성 → ruling 문장에 쟁점 1·4 번호 붙여 회수. 저림 호소자는 즉석 처치 금지 → \"지속되면 의료기관 평가\". 1회차 협착 진단 참가자가 다시 오더라도 개별 지목 금지. 1회차 현장 반응(강사 메모)은 화면에 띄우지 않는다."},{"id":"shoulder","name":"어깨","hypothesis":"가설: '통증은 근육의 집 주소'는 비유입니다 — 아픈 자리가 항상 원인 자리는 아닙니다. 어깨 무거움의 용의자는 목-어깨 모서리(승모근 상부)와 겨드랑이 뒤쪽 근육 벽(광배근)이라는 가설을 확인합니다. 한쪽만 풀면 팔 무게가 좌우로 달라지는지 봅니다 — 쟁점 5의 어깨 자가 확인이 여기 있습니다.","statement":"사건 3 접수 — 어깨. 지금 이 순간, 방금 한 확인 동작(양팔 만세)에서 느낀 불편감을 0~10으로 진술합니다. 뭉침·무거움·걸림 포함. 급성 통증·탈구 이력이 있는 분은 만세 대신 앞으로 들기까지만 합니다.","check":"쟁점 5 자가 확인 동작(10초): 양팔 천천히 만세. 걸리는 높이와 어느 팔이 무거운지 기억합니다. 무거운 팔이 오늘의 사건입니다.","reset":["한쪽만: 목과 어깨의 모서리(승모근 위, 살짝 뒤)를 등받이와 등 사이 공으로 받치고(골다공증 진단자는 손으로 가볍게), 내쉬며 팔 만세 ×3. 아픈 지점을 찾으면 '심봤다'","겨드랑이 정중앙은 누르지 않고 뒤쪽 근육 벽(정중앙에서 등 쪽으로 손가락 한 마디)에만 공을 손으로 대고 5초 내쉬기 ×3. 저림·찌릿함은 중단 신호 — 옮겨도 남으면 생략","미간의 힘 빼기 — 인상 쓰면 근육도 같이 조입니다. '지금 몇 % 뺐습니까? 80%? 5% 빼셨습니다.' 물 먹은 솜, 녹은 아이스크림까지"],"compare":"대질(클라이맥스): 안 푼 팔 만세 vs 푼 팔 만세. 팔 무게가 다릅니까? 한쪽만 풀어도 기대는 남습니다 — 어느 쪽을 풀었는지 본인이 아니까요. 다만 '전체가 좋아진 기분'과 '푼 쪽만 다른 감각'은 구분해 보실 수 있습니다. 사후 QR에는 누를 때 아픔이 아니라 만세할 때 불편감을 적습니다.","slogan":"'통증은 근육의 집 주소' — 비유입니다. 주소를 찾으면 '심봤다'.","keep":"팔이 가벼우면 스포츠카를 얻은 것 — 주차장에 두지 말고 쓰세요. 한 시간에 한 번 1분 리셋의 B(집무실) 버전: 모서리를 손으로 누른 채 만세 ×2 + 미간.","safety":"어깨 급성 통증·탈구 이력이 있으면 만세 대신 앞으로 들기까지만. 겨드랑이 정중앙은 누르지 않고 뒤쪽 근육 벽만. 저림·찌릿함·어지럼은 오늘 실습의 중단 신호입니다 — 이유는 판단하지 않습니다. 손가락 한 마디 옮겨도 남으면 그 부위는 생략. 골다공증 진단·스테로이드 장기 복용자는 등·갈비 쪽 압박을 손으로 가볍게, 체중을 싣지 않습니다. 항응고제 복용·멍 잘 드는 분은 압박 생략, 동작만. 강도는 '시원한 불편감', 숨이 쉬어지는 아픔까지 — 숨이 막히면 너무 센 것.","evidence":[{"kind":"문헌","text":"통증은 조직 손상의 크기와 동일하지 않으며 생물·심리·사회 요인의 영향을 받는다 — 아픈 자리가 원인 자리와 다를 수 있다","source":"IASP 통증 정의 개정 (2020)","confidence":"high"},{"kind":"현장","text":"1회차(8/31) 현장에서 안 푼 팔 vs 푼 팔 만세 비교 시 좌우 차이 반응 — 강사 관찰·자기보고, 기록 없음(참고). 1회차는 매트·누운 자세, 오늘은 의자 버전 — 오늘이 의자 버전의 첫 기록","source":"1회차 강사 관찰","confidence":"medium"},{"kind":"실험","text":"오늘 안 푼 팔 vs 푼 팔 만세 + 사전/사후 QR","source":"현장 자기 대조","confidence":"medium"}],"counter":"\"오십견·손목터널이 이걸로 낫나?\" — 낫는다고 말하지 않습니다. 그 진단명들은 의료기관의 영역입니다. 오늘은 그 위에 얹힌 굳은 근육을 풀면 '가벼워지는지'만 확인합니다. \"세게 누를수록 잘 풀린다\" — 더 세게가 더 낫다는 근거는 없고, 오늘 규칙은 숨이 쉬어지는 강도입니다.","ruling":"사건 3 소결 — 어깨 불편감 평균 {drop}점, 사전 1 이상 응답 중 {pct}%가 1점 이상 내려감(자기보고). 쟁점 5 답: 만세 한 번이면 어느 팔이 무거운지 안다 — 오늘의 기준선 관찰이다. 집 주소를 찾은 분과 못 찾은 분, 둘 다 증거입니다.","answers_here":[3,5],"notes":"[5분] 0:00 공 톡. \"사건 3, 어깨. 주장: 통증은 근육의 집 주소 — 비유입니다. 아픈 자리가 항상 원인 자리는 아닙니다.\" 0:10 확인 동작(쟁점 5): 양팔 만세, 무거운 팔 기억. 0:30 리셋 1 승모근 모서리, 한쪽만. \"오른손잡이는 보통 오른쪽. 아프면?\" → \"심봤다.\" 골다공증 진단자는 등받이 공 대신 손으로 가볍게, 항응고제는 압박 생략 선언. 1:40 리셋 2 겨드랑이 뒤 근육 벽 — 안전 문구 먼저, 이유 설명 없이: \"정중앙은 누르지 않습니다. 등 쪽으로 손가락 한 마디. 저리면 중단 신호, 옮겨도 남으면 생략.\" 2:40 리셋 3 메타인지 실험: \"지금 힘 몇 % 뺐습니까? 80%? — 5% 빼셨습니다. 물 먹은 솜, 녹은 아이스크림.\" 보톡스·외모 농담 없음. 3:20 대질(오늘 최고 클라이맥스): \"공 빼고. 안 푼 팔 만세. 푼 팔 만세.\" 탄성이 나오면 멈추고 되묻기: \"지금 뭐라고 하셨어요? 증인 진술로 채택하겠습니다.\" \"아프면 유죄, 안 아프면 무죄가 아닙니다. 감각은 선악이 없어요.\" 기대효과 한 문장: \"한쪽만 풀어도 기대는 남습니다. 전체 기분과 푼 쪽 감각만 구분해 보십시오.\" 4:20 집행: \"스포츠카, 주차장에 두지 마십시오.\" + 1분 리셋 B 버전. 4:40 재검사: \"만세 직후 불편감입니다. 누를 때 아픔이 아닙니다.\" [사후 QR 화면] 입력 → 반대쪽 모서리 45초 속성 → ruling. 1회차 현장 반응(참가자 발언 인용 없이 강사 메모)은 화면에 띄우지 않는다. 금지: '바로 낫게 해드린다' → '가벼워지는지 확인'."},{"id":"back","name":"허리","hypothesis":"가설: 허리는 피해자, 유력한 용의자는 엉덩이입니다. 오래 앉으면 엉덩이가 방석 역할만 하며 굳고 허리가 대신 일한다는 가설입니다. 같은 의자에서 한쪽 엉덩이만 풀고 골반 중간점을 찾은 뒤 다리 들기와 3걸음이 달라지는지 확인합니다 — 쟁점 2·4·5를 여기서 답합니다.","statement":"사건 4 접수 — 허리. 지금 이 순간, 방금 한 확인 동작(앉아서 숙이기 또는 3걸음)에서 느낀 불편감을 0~10으로 진술합니다. 다리로 뻗치는 통증·저림이 있는 분은 공은 생략하고 골반 흔들기만 하셔도 됩니다.","check":"쟁점 5 자가 확인 동작(10초): 앉은 채 몸통을 조금 숙여 허리 느낌, 또는 일어나 3걸음. 뻣뻣함의 위치와 첫 걸음의 느낌을 기억합니다.","reset":["한쪽만: 바퀴 의자는 벽·책상에 붙이고 양발을 바닥에 둔 채, 의자 위 청바지 뒷주머니 위치에 공, 그쪽 무릎을 바깥으로 벌리며 체중 싣기. '10초 불편할지, 오후 내내 불편할지' 선택","힘을 완전히 빼고 소리 나게 10초 내쉬기 ×2, 공을 바깥 위로 손가락 한 마디 옮겨 반복 — 더 아프면 '심봤다'. 저림·찌릿함은 중단 신호, 옮겨도 남으면 생략","골반을 앞뒤로 작게 5번 움직여 가장 편한 중간점에서 호흡 3회 — 이것이 좋은 의자가 못 해주는 일이고, 1분 리셋의 첫 10초(쟁점 4)"],"compare":"대질: 공 빼고 안 푼 다리 vs 푼 다리 들어 올리기. 일어나서 3걸음 — 첫 걸음이 다릅니까? 의자는 그대로였습니다(쟁점 2). 사후 QR에는 누를 때 아픔이 아니라 지금 동작의 불편감을 적습니다. 쟁점 5 답: 돌리고(목)·들고(어깨)·걷고(허리) — 10초씩, 0~10으로 적는다. 셋 중 가장 걸리는 동작이 오늘 내 사건.","slogan":"엉덩이는 방석이 아닙니다. 허리는 피해자, 용의자는 엉덩이.","keep":"앉을 때 골반 중간점에서 배를 살짝 조여 등을 세웁니다. 한 시간에 한 번 1분 리셋 — 가장 좋은 자세는 다음 자세. 1분 리셋의 첫 10초: 뒷주머니 쪽으로 체중 옮기기 + 골반 중간점.","safety":"바퀴 의자는 벽이나 책상에 붙이고, 양발을 바닥에 둔 채 체중을 옮깁니다. 의자가 밀리면 공을 뺍니다. 다리로 뻗치는 통증·저림이 있으면 공은 생략하고 골반 흔들기만 합니다. 저림·찌릿함은 오늘 실습의 중단 신호입니다 — 이유는 판단하지 않습니다. 손가락 한 마디 옮겨도 남으면 그 부위는 생략. 고관절·무릎 인공관절, 항응고제 복용·멍 잘 드는 분은 압박 생략, 동작만. 대소변 조절 이상·발열·야간통·최근 외상은 이 법정 관할 밖 — 의료기관 평가가 먼저입니다. 허리 진료 중인 분은 담당 의료진 지시 우선.","evidence":[{"kind":"문헌","text":"비특이적 요통에 일상 활동 지속·자기관리·운동을 권고. 레드플래그 징후는 별도 평가","source":"NICE NG59 (2016)","confidence":"high"},{"kind":"현장","text":"1회차(8/31) 현장에서 한쪽 엉덩이만 푼 뒤 다리 들기·걷기 비교 시 차이 반응, 강사 스스로 '다시 돌아온다' 고지 — 강사 관찰, 기록 없음(참고). 1회차는 매트·누운 자세, 오늘은 의자 버전 — 오늘이 의자 버전의 첫 기록","source":"1회차 강사 관찰","confidence":"medium"},{"kind":"실험","text":"오늘 같은 의자에서 한쪽만 풀고 다리 들기·3걸음 비교 + 사전/사후 QR","source":"현장 자기 대조","confidence":"medium"}],"counter":"\"디스크가 있으면 소용없지 않나?\" — 영상 소견은 오늘 못 바꿉니다. 오늘 확인하는 것은 그 위에 얹힌 근육 상태입니다. \"허리가 아프면 허리를 풀어야 한다\" — 오늘은 허리를 만지지 않았습니다. 변화가 없는 분은 원인이 엉덩이가 아닌 경우이니 손 들어 주세요 — 그것이 더 중요한 정보입니다. 저림이 늘면 의료기관입니다.","ruling":"사건 4 소결 — 허리 불편감 평균 {drop}점, 사전 1 이상 응답 중 {pct}%가 1점 이상 내려감(자기보고). 쟁점 2 답: 의자는 같았고 엉덩이만 달랐다 — 좋은 의자는 좋은 변호사, 대신 걸어 주진 않는다. 쟁점 4 답: 1분 리셋의 첫 10초 = 뒷주머니 쪽 체중 옮기기 + 골반 중간점. 쟁점 5 답: 돌리고·들고·걷고 — 10초씩, 0~10으로 적는다. 가장 걸리는 동작이 오늘 내 사건.","answers_here":[2,3,4,5],"notes":"[5분] 0:00 공 톡. \"사건 4, 허리. 주장: 허리는 피해자, 유력한 용의자는 엉덩이.\" 0:10 확인 동작(쟁점 5): 앉아서 숙이기 또는 3걸음. 쟁점 5 종합 구호는 여기서 한 번: \"돌리고, 들고, 걷고 — 10초씩, 0~10. 셋 중 가장 걸리는 게 오늘 내 사건입니다.\" 0:30 리셋 1 — 안전 문구 먼저, 이유 없이: \"바퀴 의자는 벽에 붙이고 양발 바닥. 저리면 손가락 한 마디 옮기고, 남으면 생략.\" 인공관절·항응고제는 압박 생략 선언. \"오늘 하루 종일 엉덩이가 방석이었습니다. 내 엉덩이가 외칩니다 — 전 방석이 아니에요.\" 1:20 \"10초 불편할지, 오후 내내 뻐근할지 선택하세요. 하나 둘 셋에 완전히 뺍니다.\" 한 마디 이동 후 반복. 2:40 리셋 3 골반 중간점(쟁점 2·4 답): \"앞뒤로 작게 5번, 가장 편한 중간. 이게 좋은 의자가 못 해주는 일입니다. 1분 리셋의 첫 10초가 이것.\" 3:20 대질: \"공 빼고. 안 푼 다리 들기. 푼 다리. 일어나서 3걸음. 첫 걸음이 다릅니까?\" 변화 없는 분 손들기 — 반드시 말한다: \"원인이 엉덩이가 아닌 경우이니 더 중요한 정보입니다.\" 법원 청중은 예외를 인정하는 쪽을 신뢰. 4:20 집행 + 1분 리셋 첫 10초. 4:40 재검사: \"같은 동작 직후, 누를 때 아픔 아님.\" [사후 QR 화면] 입력 → 반대쪽 뒷주머니 45초 속성 → ruling에 쟁점 2·4·5 번호 붙여 회수. 1회차 현장 반응(강사 메모)은 화면에 띄우지 않는다. 금지: '허리 한 방', '거의 마법', '즉시 없어진다' → '달라지는지 확인합니다'."},{"id":"knee","name":"무릎","hypothesis":"가설: 무릎은 2층입니다. 1층(발)과 3층(엉덩이·골반), 그리고 굳은 앞 허벅지가 무릎의 방향과 부담에 영향을 준다(개인차 큼)는 가설입니다. 앞 허벅지를 동적 이완하고 발 3점·무릎 방향을 맞춘 뒤 일어서기가 달라지는지 확인합니다 — 쟁점 6의 단서가 여기 있습니다.","statement":"사건 5 접수 — 무릎. 지금 이 순간, 방금 한 확인 동작(천천히 일어나기)에서 느낀 불편감을 0~10으로 진술합니다. 수술 직후·부종·열감이 있는 분은 압박은 생략하고 일어나기만 하셔도 됩니다.","check":"자가 확인 동작(10초): 의자에서 천천히 일어나기 1회. 무릎이 향하는 방향(둘째 발가락 쪽인지 안쪽인지)과 불편한 지점을 기억합니다.","reset":["한쪽만: 앉아서 허벅지 앞 중앙을 공이나 손바닥으로 누른 채 무릎 구부렸다 폈다 ×10, 움직이며 내쉬기(동적 이완). 아프면 '심봤다', 숨은 계속","발 3점(뒤꿈치·엄지 아래·새끼 아래)을 바닥에, 무릎은 둘째 발가락 방향 — 1층을 먼저 세운다","무릎을 잠그지 말고 2%만 구부린 채 엉덩이를 접어 일어나기 ×3 — 5%도 아니고 2%. 3층(엉덩이)이 일하게"],"compare":"대질: 안 푼 다리 vs 푼 다리 들기. 같은 속도로 한 번 더 일어나 비교합니다. 무릎은 만지지 않고 발과 방향만 바꿨는데 다르다면, '무릎은 2층' 가설이 지지된 것입니다 — 확정은 아닙니다. 사후 QR에는 일어날 때 불편감을 적습니다.","slogan":"무릎은 2층입니다. 1층(발)과 3층(엉덩이)이 무릎에 영향을 줍니다.","keep":"서 있을 때 무릎 2% 구부리기 — 엘리베이터와 신호등에서 연습. 계단은 발 3점을 딛고 무릎을 둘째 발가락 방향으로. 한 시간에 한 번 1분 리셋 첫 10초의 발 3점이 여기서 온다.","safety":"수술 직후·부종·열감·최근 외상·고관절·무릎 인공관절·항응고제 복용·멍이 잘 드는 분은 압박은 생략하고 발 3점·2% 일어나기만 합니다. 슬개골(무릎뼈)은 누르지 않습니다. 저림·찌릿함은 오늘 실습의 중단 신호 — 이유는 판단하지 않습니다. 병원 재활 중이면 그 프로그램을 그대로 하고 이완만 추가합니다 — 재활 중단을 권하지 않습니다.","evidence":[{"kind":"문헌","text":"성인에게 근력 강화 활동을 주 2일 이상 권고 — 강화는 필요하며, 오늘은 그 전 단계인 '풀기와 방향'을 다룬다","source":"WHO 신체활동 및 좌식행동 가이드라인 (2020)","confidence":"high"},{"kind":"현장","text":"감정인 본인 사례: 연골 이식 수술과 병원 재활을 마친 뒤에도 남아 있던 불편이, 이완을 먼저 하고 순서를 바꾼 뒤 달라져 42km 완주 — 표본 1명, 증거능력 낮음, 참고용","source":"강사 개인 경험","confidence":"medium"},{"kind":"실험","text":"오늘 안 푼 다리 vs 푼 다리 들기, 일어서기 비교 + 사전/사후 QR","source":"현장 자기 대조","confidence":"medium"}],"counter":"\"허벅지 근육을 키우면 무릎이 보호되지 않나?\" — 근력 강화는 무릎 재활의 표준이고 부정하지 않습니다. 감정인 의견은 '순서'입니다: 굳은 앞 허벅지를 먼저 풀고, 방향을 맞춘 뒤 강화. 수술·재활이 틀렸다는 뜻이 아니라 그 다음 단계 이야기이고, 표본 1명입니다. 그래서 오늘 여러분이 직접 잽니다.","ruling":"사건 5 소결 — 무릎 불편감 평균 {drop}점, 사전 1 이상 응답 중 {pct}%가 1점 이상 내려감(자기보고). 무릎 자체를 만지지 않고 1층·3층과 서는 방식만 바꿨습니다. 쟁점 6의 부속 단서: 근육을 '더 키우는 것'과 '풀고 제 방향으로 쓰는 것'은 다른 일이다 — 확정은 판결에서.","answers_here":[3,6],"notes":"[5분] 0:00 공 톡. \"마지막 사건, 무릎. 주장: 무릎은 2층이라는 가설.\" 0:10 확인 동작: 천천히 일어나기 1회, 무릎 방향 관찰. \"안쪽으로 모입니까?\" 0:30 리셋 1 허벅지 앞 압박 + 구부렸다 폈다 ×10. \"움직이면서 내쉽니다. 옆사람 귀에 안 들리면 호흡 안 한 것.\" 인공관절·항응고제·멍 잘 드는 분은 압박 생략, 동작만(rules와 동일). 1:30 감정인 서사 30초 — 문구 고정: \"수술과 병원 재활을 마친 뒤에도 남아 있던 불편이, 이완을 먼저 하고 순서를 이완→뒤쪽 강화→앞쪽 강화로 바꾼 뒤 달라져 지금 42km를 뜁니다. 수술·재활이 틀렸다는 뜻이 아니라 그 다음 단계 이야기이고, 표본 1명입니다. 병원 재활 중이면 그대로 하고 이완만 추가하십시오.\" 금지: '수술해도 안 낫는다', '슬개골이 더 당긴다'류 기전 단정. 2:20 리셋 2 발 3점·둘째 발가락 방향. 3:00 리셋 3 무릎 2% 일어나기 ×3(쟁점 6 단서): \"5% 아니고 2%. 티 나지 않게.\" 3:40 대질: 좌우 다리 들기, 한 번 더 일어나기. 4:20 집행 + 1분 리셋. 4:40 \"마지막 재검사. 일어날 때 불편감. 이제 판결로 갑니다.\" 벌금 결산 예고: \"오늘 벌금 총액은 판결 뒤 발표합니다.\" [사후 QR 화면] 입력 → 반대쪽 허벅지 45초 속성 → ruling → 바로 판결 슬라이드."}],"answers":[{"no":1,"question":"왜 일을 오래 하면 목과 허리가 아픈가?","conclusion":"범인은 '나쁜 자세'가 아니라 '한 자세'라는 가설입니다 — 오래 같은 자세로 있으면 목·허리를 받치는 근육이 쉬지 못하고 계속 일하는 정적 부하가 쌓이며, 많은 경우 조직 손상보다 정적 부하로 설명됩니다(NICE NG59: 요통 대부분은 비특이적, 목은 유추). 개별 원인은 의료기관 판단입니다.","grounds":["고용노동부 근골격계부담작업 고시: 하루 4시간 이상 집중적 키보드·마우스 조작 작업을 부담작업으로 지정해 사업주 유해요인조사 의무 부과 — 장시간 고정 사무작업의 한 유형을 국가 기준이 부담작업으로 지정(기록 검토는 직접 대상 아님, 취지만 원용) (high)","WHO 2020: 성인에게 좌식 시간을 줄이고 어떤 강도의 활동으로든 대체할 것을 권고 (high)","정적 부하 일반 원칙: 자세 유지 근육의 장시간 저강도 수축은 혈류 감소와 피로를 누적시킨다 — 구체 수치 없이 일반 원칙으로만 (medium)"],"today_check":"목 사건에서 목을 만지지 않고 등받이에 등 상부만 붙여 등을 세운 뒤 좌우 회전을 다시 합니다. 목을 건드리지 않았는데 회전 느낌이 달라지면, 적어도 '자세가 목 감각에 영향을 준다'는 것은 각자 확인한 셈입니다(범인 확정 아님, 가설 지지까지). 사후 QR 소결에서 쟁점 1 번호를 붙여 회수합니다.","route":"→ 쟁점 1 슬라이드 + 목 사건 소결","slide_ids":["q1","practice-neck","qr-neck-post"]},{"no":2,"question":"좋은 의자와 바른 자세만으로 해결되지 않는 이유는 무엇인가?","conclusion":"의자와 자세는 필요조건이지 충분조건이 아니다 — 가장 좋은 자세는 다음 자세다. (좋은 의자는 좋은 변호사: 부담을 나눠 주지만 대신 걸어 주진 않는다. 어떤 좋은 자세도 오래 고정되면 다시 정적 부하가 되고, 굳은 엉덩이·등으로는 바른 자세를 만들기 어렵다는 가설 — 답은 굳은 곳 풀기 + 자세 바꾸기.)","grounds":["NICE NG59(2016): 요통에 일상 활동 지속과 운동을 권고 — 정지가 아니라 움직임이 표준(요통 지침, 타 부위는 유추) (high)","WHO 2020: 좌식 시간 자체를 줄이라고 별도 권고 — '더 잘 앉기'가 아니라 '덜 오래 앉기' (high)","단일한 '이상적 자세'의 근거는 약하고 자세를 자주 바꾸는 것이 더 중요하다는 견해가 전문 문헌에서 제시됨 — 일반 원칙, 저자명은 references에만 (medium)"],"today_check":"쟁점 2 슬라이드에서 60초 동안 '가장 바른 자세'를 유지하고 어디가 먼저 뻐근한지 기억합니다(아무렇지 않아도 정상 — 고시 기준은 4시간). 허리 사건에서 같은 의자에 앉은 채 한쪽 엉덩이만 풉니다 — 의자는 그대로인데 다리 들기·3걸음이 좌우로 다르면 의자가 변수가 아니었다는 증거입니다.","route":"→ 쟁점 2 슬라이드(60초 실험) + 허리 사건 소결","slide_ids":["q2","practice-back","qr-back-post"]},{"no":3,"question":"통증이 있을 때 움직여도 되는 것과 병원에 가야 하는 것을 어떻게 구분하는가?","conclusion":"관할 밖 대표 일곱 가지(저림·힘 빠짐·대소변 장애·발열·야간통·외상·급성 심한 통증)는 가이드라인 공통 기준으로 오늘 압박을 생략하고 의료기관 평가가 먼저이며, '자세를 바꾸면 덜해지고, 눌렀을 때 시원한 불편감이며, 숨 쉬면서 견딜 수 있는' 뻐근함은 오늘 실습 참가를 위한 감정인의 실무 기준입니다 — 이 목록은 배제 도구가 아니며 병원 갈지의 최종 판단은 의료인의 몫입니다.","grounds":["NICE NG59(2016): 심각한 원인을 시사하는 징후(레드플래그)는 별도 평가, 그 외 대부분은 일상 활동 지속과 운동 권고 — 요통 지침이며 다른 부위는 같은 원칙을 유추 적용 (high, 유추 medium)","IASP 2020 주석: 통증과 통각은 다른 현상이며 통증은 감각 신경 활동만으로 추론할 수 없다 — 그래서 세기만으로 가르지 않고 동반 징후를 함께 본다(관할 기준 도출은 감정인의 적용) (high)","임상 가이드라인 공통 레드플래그 일반 원칙: 신경학적 결손, 대소변 이상, 감염·종양 의심, 외상, 원인 모를 체중 감소·암 병력·스테로이드 장기 복용은 평가 대상 (high)","레드플래그는 선별 도구이지 배제 도구가 아님 — 개별 항목의 민감도·특이도는 낮다는 일반 원칙. 2~4주 이상 지속·악화도 평가 대상 (medium)","관할 안 세 가지 기준과 '숨이 쉬어지는 강도'는 가이드라인이 아니라 감정인의 실무 기준 (medium)"],"today_check":"증거능력 고지 슬라이드의 일곱 가지를 각 부위 사전 QR 전 10초 자가 확인합니다. 하나라도 해당되면 그 부위는 동작만 — 손 들 필요 없이 본인만 알면 됩니다. 실습 중 '숨이 막히는가, 찌릿한가, 어지러운가' 셋 중 하나라도 있으면 그 자리는 패스(이유는 판단하지 않음). 목·어깨 통증에 가슴 답답함·식은땀이 함께 오면 실습이 아니라 응급. 부위별 안전 문구가 같은 기준을 반복합니다.","route":"→ 증거능력 고지(방금) + 심리 절차 + 부위별 안전 문구","slide_ids":["rules","bridge","practice-foot","practice-neck","practice-shoulder","practice-back","practice-knee"]},{"no":4,"question":"재판이나 기록 검토 중 1분밖에 없다면 무엇을 해야 하는가?","conclusion":"A 법대 위 버전(손·공 없음, 티 안 나게): 발 3점·뒷주머니 쪽 체중 옮기기(0~10초) → 등받이에 등 상부 붙이고 배 조여 소리 안 나게 5초 내쉬기 ×3(10~40초) → 미간 힘 빼기(40~55초) → 고개 좌우 회전 확인(55~60초). B 집무실·기록 검토 버전: A + 모서리 누르며 만세 ×2(공 있으면 공). 목·허리를 만지지 말고 용의자만 건드립니다.","grounds":["WHO 2020: 좌식 시간을 줄이고 어떤 강도의 활동으로든 대체할 것을 권고, '어떤 활동이든 안 하는 것보다 낫다' (high). '자주 끊기'는 감정인의 번역 (medium)","고용노동부 VDT 취급근로자 작업관리지침: 장시간 화면 작업 시 주기적 휴식과 자세 변화 권고 — 구체 시간은 인용하지 않음 (medium)","오늘 목·허리 사건이 이 1분 버전의 확장판 — 사전/사후 QR로 달라지는지 확인 (실험, medium)"],"today_check":"목 사건의 첫 리셋(등 세우기 ×3)이 1분 버전의 핵심 30초, 허리 사건의 골반 중간점이 첫 10초입니다 — 각 소결에서 '쟁점 4' 번호를 붙여 부위별 항목이 종합 절차의 부품임을 밝힙니다. 폐정에서 전원이 강사 카운트로 A(법대) 버전 60초를 실연합니다.","route":"→ 목·허리 사건의 '1분 리셋 부품' + 폐정 전원 실연","slide_ids":["practice-neck","practice-back","qr-neck-post","qr-back-post","close"]},{"no":5,"question":"어깨·목·허리 중 내 문제를 간단히 확인할 방법이 있는가?","conclusion":"돌리고(목)·들고(어깨)·걷고(허리) — 10초씩, 0~10으로 적는다. 셋 중 가장 걸리는 동작이 오늘 내 사건이고, 같은 동작에서 더 걸리거나 무거운 쪽이 먼저 풀 쪽입니다 — 오늘 쓴 자가 확인 동작 그대로이며, 진단이 아니라 오늘의 기준선 관찰입니다.","grounds":["0~10 숫자 척도(NRS)는 통증·불편감 자기보고의 표준 도구 — 같은 기준의 반복 측정이 변화를 보여준다 (high)","좌우 비교는 개인 내 자기 대조로, 시간·피로·기분처럼 양쪽에 걸리는 요인을 빼고 '전체 기분'과 '국소 감각'을 분리하는 보조 장치 — 기대는 제거하지 못함(비맹검) — 연구설계 일반 원칙 (medium)","1회차 현장: 안 푼 쪽 vs 푼 쪽 비교에서 좌우 차이 반응(자기보고, 미기록 다수, 매트 버전) (medium)"],"today_check":"목·어깨·허리 사건의 '자가 확인 동작' 첫 10초가 그것이고, 허리 소결에서 세 단어 구호로 종합합니다. 아침·잠들기 전 같은 세 동작을 같은 속도로 하고 숫자만 적으면 집에서도 재현됩니다. 저림·힘 빠짐이 동반되면 관찰이 아니라 의료기관 평가입니다.","route":"→ 목·어깨·허리 사건의 자가 확인 동작, 허리 소결에서 종합","slide_ids":["practice-neck","practice-shoulder","practice-back","qr-back-post"]},{"no":6,"question":"운동을 많이 하는 것과 몸을 잘 관리하는 것은 어떻게 다른가?","conclusion":"운동은 체육관 1시간의 '양', 관리는 체육관 밖 23시간의 '상태'이며 둘은 서로 대체되지 않습니다 — 관리 없는 운동은 주차장의 스포츠카입니다. (무릎 소결의 '풀기→방향→강화' 순서는 이 답의 부속 단서.)","grounds":["WHO 2020: 신체활동 권고(주 150~300분 중강도, 근력 주 2회)와 좌식 시간 감소 권고가 별개의 두 축 — 운동을 채워도 좌식은 따로 줄여야 함 (high)","자가 근막 이완의 단기 효과 일반 원칙: 단기 가동범위 증가·주관적 이완은 반복 보고되나 단기·개인차, 구조 변화 근거 아님 — 그래서 매일 반복하는 '관리'가 필요 (medium)","오늘 실험: 체육관식 운동 0분, 풀기·호흡·자세 변화·짧은 확인 동작만으로 숫자가 달라졌는지 — 피날레 집계, 자기보고·대조군 없음·비맹검 (medium)"],"today_check":"판결 슬라이드의 결과 공개 — 오늘 체육관식 운동(근력·유산소)은 하지 않았는데 전후 응답이 달라졌는지 봅니다. 변화 없음·증가 비율을 먼저 읽습니다. 무릎 사건의 '풀고 → 발·엉덩이 세우고 → 일어나기' 순서가 단서, 확정은 판결에서.","route":"→ 무릎 사건 소결 + 판결(주문 끝 문장)","slide_ids":["practice-knee","qr-knee-post","verdict"]},{"no":7,"question":"오늘 딱 세 가지만 기억한다면 무엇인가?","conclusion":"① 범인 — 아픈 곳 말고 굳은 곳(목→등, 허리→엉덩이, 어깨→승모근·겨드랑이, 무릎→발·앞허벅지) ② 내쉬기 — 아프면 참지 말고 5초 소리 나게(내쉬고·미간 풀고·심봤다) ③ 1분 리셋 — 한 시간에 한 번 1분, 5%만. 세 단어: 범인 · 내쉬기 · 1분 리셋.","grounds":["범인: 오늘 다섯 사건 모두 아픈 부위를 직접 만지지 않고 굳은 곳을 풀어 재검사 — 그 결과가 ①의 증거 (실험, medium)","내쉬기: 압통점 지속 압박과 이완 호흡은 근막 이완의 일반적 기법. '내쉬면서 힘을 빼는 것'은 오늘의 코칭 신호 (medium)","1분 리셋: WHO 2020 '좌식 시간을 줄이고 활동으로 대체'와 NICE NG59 '일상 활동 지속'을 판사 업무에 맞게 번역한 것 (high, 번역은 medium)"],"today_check":"폐정에서 전원 A(법대) 버전 1분 실연(집행의 첫 실행) 후 옆사람에게 한 문장: '내 범인은 ○○이고, 내일 1분 행동은 ○○이다.' 말한 것이 집행됩니다. 재발하면 같은 동작·같은 0~10으로 재측정(재심), 저림·힘 빠짐이 늘면 의료기관.","route":"→ 폐정","slide_ids":["close","verdict"]}],"references":[{"id":"iasp2020","citation":"International Association for the Study of Pain (IASP). Revised definition of pain, 2020 (Raja SN et al., Pain 2020)","url":"https://www.iasp-pain.org/resources/terminology/","confidence":"high","used_for":"개정·증거능력 고지·어깨 사건 — 통증은 실재하되 조직 손상의 크기와 같은 뜻이 아님. 주석 '통증과 통각은 다른 현상'까지만 인용, 관할 기준 도출은 감정인의 적용"},{"id":"who2020","citation":"World Health Organization. WHO guidelines on physical activity and sedentary behaviour, 2020","url":"https://www.who.int/publications/i/item/9789240015128","confidence":"high","used_for":"쟁점 1·2·4·6·7 — 좌식 시간을 줄이고 어떤 강도의 활동으로든 대체할 것을 권고, '어떤 활동이든 안 하는 것보다 낫다', 운동량과 좌식은 별개 항목, 근력 주 2회. '자주 끊기'는 별도 권고 항목이 아니므로 감정인의 번역으로 표기"},{"id":"nice_ng59","citation":"NICE. Low back pain and sciatica in over 16s: assessment and management (NG59), 2016 (updated 2020)","url":"https://www.nice.org.uk/guidance/ng59","confidence":"high","used_for":"쟁점 2·3·7, 허리 사건 — 일상 활동 지속과 운동 권고, 레드플래그 시 별도 평가. 요통 지침이며 다른 부위는 같은 원칙을 유추 적용(medium)"},{"id":"moel_msd","citation":"고용노동부 고시 「근골격계부담작업의 범위 및 유해요인조사 방법에 관한 고시」 (산업안전보건법 근거) — 하루 4시간 이상 집중적 자료입력 등을 위한 키보드·마우스 조작 작업(제2호) 등을 부담작업으로 지정, 사업주에게 유해요인조사 의무","url":"https://www.law.go.kr/","confidence":"high","used_for":"쟁점 1, 목 사건 — 장시간 고정 사무작업의 한 유형이 부담작업으로 지정됨. 기록 검토·재판 진행은 직접 대상이 아니므로 '취지'만 원용. 제4호(임의로 자세를 바꿀 수 없는 조건에서 2시간 이상 목·허리를 구부리거나 트는 작업)는 조건부 언급만, 판사 업무 해당 여부 단정 없음. '4시간' 외 세부 수치는 인용하지 않음"},{"id":"moel_vdt","citation":"고용노동부 고시 「영상표시단말기(VDT) 취급근로자 작업관리지침」","url":"https://www.law.go.kr/","confidence":"medium","used_for":"쟁점 4 — 장시간 화면 작업 시 주기적 휴식·자세 변화 권고. 구체 시간 수치는 인용하지 않음"},{"id":"posture_general","citation":"자세와 통증의 관계에 관한 일반 원칙 — 단일 이상적 자세의 근거는 약하고 자세 변화·움직임이 더 중요 (예: Slater D et al., 'Sit Up Straight': Time to Re-evaluate, JOSPT 2019 논평). 전방 머리 자세와 목 통증의 연관은 문헌에서 일관되지 않음","confidence":"medium","used_for":"쟁점 2, 목 사건 — '바른 자세는 지키는 것이 아니라 바꾸는 것', '가장 좋은 자세는 다음 자세'. 화면·발화에서는 저자명 없이 일반 원칙으로만, 목 가설은 '가설'로 표기"},{"id":"static_load","citation":"근육 정적 부하(장시간 저강도 지속 수축 → 혈류 감소·피로 누적)에 관한 근생리학 일반 원칙","confidence":"medium","used_for":"쟁점 1·4, 목 사건 — 구체 수치·특정 가설명 없이 '일반 원칙'으로만 사용"},{"id":"smr_general","citation":"자가 근막 이완(공·폼롤러 압박)의 단기 관절가동범위 증가·주관적 이완 효과에 관한 일반 원칙 — 효과는 단기·개인차, 구조 변화 근거 아님. 더 센 압박이 더 낫다는 근거 없음","confidence":"medium","used_for":"어깨 사건·판결·쟁점 6·7 — '가벼워지는지 확인', 매일 반복하는 관리의 근거, 강도 규칙은 '숨이 쉬어지는 강도'(감정인 현장 기준)"},{"id":"kinetic_chain","citation":"발·무릎·고관절의 하지 운동 사슬과 발바닥 감각 입력에 관한 운동학 일반 원칙 — 특정 논문 수치 인용 없음","confidence":"medium","used_for":"발·무릎 사건 — '1층·2층·3층' 가설. 인과의 크기는 개인차가 큼을 명시, '결정'이 아니라 '영향'"},{"id":"redflags_general","citation":"임상 가이드라인 공통 레드플래그 일반 원칙 — 신경학적 결손(저림·힘 빠짐), 대소변 이상, 감염·종양 의심(발열·야간통), 외상, 급성 심한 통증, 원인 모를 체중 감소, 암 병력, 스테로이드 장기 복용, 지속·악화. 레드플래그는 선별 도구이지 배제 도구가 아님(개별 항목의 민감도·특이도는 낮음)","confidence":"high","used_for":"쟁점 3, 증거능력 고지·부위별 안전 문구 — 관할(이송) 기준 '대표 일곱 가지' + 추가 항목. 목·어깨 통증 동반 가슴 답답함·식은땀은 응급"},{"id":"nrs","citation":"0~10 숫자 평가 척도(NRS)의 통증 자기보고 표준 사용 — 임상·연구 일반 원칙. 사전 0은 개선 판정에서 제외(바닥 효과), 1점 변화는 오차 범위일 수 있음","confidence":"high","used_for":"쟁점 5·7, 측정 엔진 — 같은 동작 직후·같은 기준 반복 측정. 개선율 분모는 '사전 1 이상 응답', '2점 이상 감소' 비율을 함께 표시하되 임상적 의미는 단정하지 않음"},{"id":"expectation_regression","citation":"기대효과(플라시보)·평균으로의 회귀·자기보고 편향·비맹검 — 전후 비교 연구의 대표적 교란 요인에 관한 연구방법론 일반 원칙","confidence":"high","used_for":"증거능력 고지·판결 한계 — 강사가 먼저 인정하는 한계. '한쪽만 풀기'는 기대효과를 제거하지 못하며(비맹검), 양쪽에 동시에 걸리는 요인을 빼고 반대편을 원래 상태로 보존하는 설계"},{"id":"transcript_r1","citation":"수원가정법원 「전문 재판 역량 강화 교육」 제1회 강연(2026-08-31) 진행 기록 — 강사 관찰 메모(내부 참고용, 화면 인용 없음)","confidence":"medium","used_for":"현장 근거의 출처(발 뛰기 비교, 경청 중 끄덕임 인지, 팔 무게 비교, 엉덩이 비교·'다시 돌아온다', 2회차는 다른 참가자). 1회차는 매트·누운 자세 버전이라 의자 버전과 조건이 다름. 참가자 반응은 자기보고·미기록 다수이므로 medium. 개별 Q&A 사례·참가자 발언 인용·타임스탬프·파일 경로는 화면 근거로 쓰지 않음(개인 특정·녹음 사실 노출 방지). 담당자에게 1회차 기록의 존재와 용도(강의 개선용 내부 참고)를 사전에 알리고 기관이 원하면 삭제"}],"verdict":{"headline":"사전 1 이상 응답 {pos}건 중 {pct}%가 1점 이상 내려갔고(2점 이상 {pct2}%), 전체 {pairs}건 중 변화 없음 {same}%, 평균 {drop}점 — 교육 직후 익명 자기보고","headline_empty":"아직 전후 짝이 없습니다 — 재검사 입력을 기다리는 중","read_first":"공개 직후 먼저 읽을 것: 변화 없음·증가 비율. '이분들이 있어서 이 숫자가 믿을 만합니다. 전부 좋아졌다면 제가 먼저 의심합니다.' 그다음 분모를 소리 내어: '사전 0점은 내려갈 수 없으니 판정에서 제외했습니다. 사전 1점 이상 응답 중 비율이고, 1점은 오차일 수 있어 2점 이상도 따로 보여드립니다.' 단위는 '건'으로 통일. 불리한 증거를 먼저 읽는 쪽이 신뢰를 얻습니다. N<5 부위는 참고용이라고 말합니다.","order":"오늘의 개입 — 아픈 곳(피해자)이 아닌 굳은 곳(범인)을 풀고 등·골반·발을 세운 것 — 은 이 강의장의 불편감을 달라지게 했다고 볼 여지가 있다. 집행: 한 시간에 한 번 1분 리셋과 서기·걷기·앉기 5%. 재심: 재발 시 같은 동작·같은 0~10 기준으로 재측정한다. 쟁점 6 — 오늘 체육관식 운동 0분. 운동은 체육관 1시간, 관리는 체육관 밖 23시간이다.","reason":"같은 사람·같은 부위·같은 동작 직후·같은 0~10 기준의 사전·사후 진술이 {pairs}건 있었고, 한쪽만 푼 대질에서 안 푼 쪽이 시간·피로·기분 요인의 자기 대조군 역할을 했다. 기대효과는 이 설계로 제거되지 않으므로 변화의 원인은 특정하지 않는다. 서증(IASP 2020, WHO 2020, NICE NG59 2016, 고용노동부 고시)은 '정적 부하·활동 유지·레드플래그 구분' 원칙을 뒷받침하고, 감정인의 개인 사례는 표본 1명으로 참고에 그친다.","condition":"저림·힘 빠짐·대소변 조절 이상·발열·야간통·최근 외상·급성 심한 통증·수술 직후는 이 법정 관할 밖 — 의료기관 평가가 먼저다. 이 밖에 원인 모를 체중 감소·암 병력·스테로이드 장기 복용·2~4주 이상 지속·악화도 평가 대상이며 최종 판단은 의료인의 몫이다. 변화가 없었거나 더 불편해진 참가자는 원인이 오늘 다룬 근육이 아닐 수 있으므로 무리하지 않는다. 병원 재활·진료 중이면 그 지시를 우선하고 오늘 방법은 '추가'로만 쓴다.","limit":"교육 직후의 익명 자기보고이며 대조군이 없다. 강사가 효과를 예고한 뒤의 측정으로 기대효과·평균으로의 회귀가 섞일 수 있고, 좌우 비교도 비맹검이다(어느 쪽을 풀었는지 본인이 안다). 사전 0점은 개선 판정에서 제외했고 1점 변화는 오차 범위일 수 있다. 1회차 현장 반응은 매트·누운 자세 버전이라 오늘 의자 버전의 근거가 아니며, 오늘이 의자 버전의 첫 기록이다. 약 40명·1회·직후 측정으로 지속 효과를 말하지 않는다. 의학적 진단이나 치료 효과를 의미하지 않는다. 감정인은 이 방법으로 일하는 이해관계인이다.","reveal_script":"공개 전 20초 침묵과 고지 → '판결 선고' 버튼 → ① 참여자 수('이 법정의 진술 건수') → ② 변화 없음·증가 비율 먼저 → ③ 분모 고지(사전 0 제외, 1점은 오차 가능, 2점 이상 별도) → ④ 평균 감소('크게 들리십니까, 작게 들리십니까') → ⑤ 부위별 표에서 최대·최소 감소를 나란히('용의자 가설이 가장 잘 맞은 부위와 덜 맞은 부위') → 주문·이유·조건·한계 낭독(한계는 소리 내어, 비맹검·1회차 조건 다름 포함) → 쟁점 6 답('체육관식 운동 0분') → 벌금 결산·미답 쟁점 안내 → '각자의 판결문은 휴대폰에 있습니다'","personal_card":{"title":"개인 판결(필기 없이, 마음에 정하거나 휴대폰 메모)","fields":["가장 많이 내려간 부위: ____ (사전 __ → 사후 __)","그 부위의 범인(굳은 곳): ____","내일 1분 행동: ____","재심(재측정) 날짜: ____","관할 밖 징후가 있으면: 의료기관 평가 먼저"],"template":"주문: 나는 {부위}의 범인 {범인}을 매일 {행동}으로 관리한다. 이유: 오늘 {사전}→{사후}로 달라졌다(자기보고). 조건: 저림·힘 빠짐이 늘면 의료기관.","unchanged_template":"주문: {부위}의 원인은 미확정이다. 재심 날짜 {날짜}에 같은 동작·같은 기준으로 다시 잰다. 조건: 관할 밖 징후가 있으면 의료기관."},"humor_callback":"오늘 벌금 총액은 전액 공(실습 교구)으로 대납 처리됐습니다. 여러분 몸에 투자된 걸로 하겠습니다 — 싸게 먹혔죠.","closing_line":"그 이상은 말하지 않겠습니다. 판단은 재판장 여러분의 몫입니다. 이상으로 사건번호 2026-몸-2, 통증 사건 심리를 폐정합니다."},"timing_total_min":49.5};</script>
+<script>
+/* ============================================================
+   몸의 법정 — 재판형 강의 발표 화면 + 참가자 화면 (단일 파일)
+   모드: 기본 = 발표자 / ?mode=join&s=세션&p=부위&t=pre|post = 참가자
+   콘텐츠는 SPEC(JSON)에서 읽고, 측정 엔진은 그대로 유지한다.
+   ============================================================ */
+(function(){
+'use strict';
+
+const SPEC=window.SPEC||{};
+const FALLBACK_PARTS=[
+  {id:'foot',name:'발·발목',hypothesis:'발이 1층입니다. 1층의 감각이 둔해지면 위층이 대신 버팁니다.',statement:'지금 발·발목의 불편감을 0~10으로 진술해 주세요.',check:'제자리에서 가볍게 3번 뛰거나 3걸음 걷기. 발바닥 느낌과 무게를 기억합니다.',reset:['의자에 앉아 한쪽 발만: 뒤꿈치는 바닥, 발 아치 중앙에 공','굴리지 않고 누른 채 5초 내쉬기 ×5','누른 채 엄지↑네 발가락↓ 교대 ×10'],compare:'안 푼 발 vs 푼 발로 제자리 가볍게 뛰기. 어느 발이 가볍고 탄력이 있습니까?',slogan:'발은 1층입니다. 1층이 무너지면 위층이 다 무너집니다.',keep:'걸을 때 뒤꿈치 바깥 → 앞꿈치. 95%는 딴생각, 5%만 발바닥에.',safety:'최근 발목을 삐었거나 발바닥이 붓고 뜨거우면 압박은 생략하고 걷기만 합니다.',ruling:'소결: 발·발목 평균 {drop}점 감소, {pct}% 개선.',evidence:[],notes:''},
+  {id:'neck',name:'목',hypothesis:'목은 피해자, 범인은 등입니다.',statement:'지금 목의 불편감을 0~10으로 진술해 주세요.',check:'정면에서 좌우로 편안한 범위까지 회전. 더 답답한 쪽을 기억합니다.',reset:['의자 등받이에 등 위쪽을 붙이고 배를 살짝 조여 등 세우기, 5초 내쉬기 ×3','뒤통수 아래 움푹한 곳에 엄지, 1초 1cm 속도로 좌우 비교, 5초 내쉬기 ×3','고개 끄덕임 습관 알아차리기 (경청 70%, 나에게 30%)'],compare:'같은 속도로 다시 회전. 각도보다 "덜 걸리는 느낌"을 확인합니다.',slogan:'목은 피해자, 범인은 등입니다.',keep:'화면 위쪽을 눈높이 근처로. 30분마다 등을 한 번 세웁니다.',safety:'팔 저림·손 힘 빠짐이 있으면 압박은 생략하고 등 세우기만.',ruling:'소결: 목 평균 {drop}점 감소, {pct}% 개선.',evidence:[],notes:''},
+  {id:'shoulder',name:'어깨',hypothesis:'통증은 근육의 집 주소입니다.',statement:'지금 어깨의 불편감을 0~10으로 진술해 주세요.',check:'양팔 만세. 걸리는 높이와 어느 팔이 무거운지 기억합니다.',reset:['한쪽만: 승모근 위를 등받이와 등 사이 공으로 받치고 팔 만세 ×3','겨드랑이 아래 옆구리에 공을 손으로 대고 5초 내쉬기 ×3','미간의 힘 빼기'],compare:'안 푼 팔 만세 vs 푼 팔 만세. 팔 무게가 다릅니까?',slogan:'통증은 근육의 집 주소입니다. 아프면 "심봤다".',keep:'팔이 가벼우면 스포츠카를 얻은 것. 주차장에 두지 말고 쓰세요.',safety:'어깨 급성 통증·탈구 이력이 있으면 만세 대신 앞으로 들기까지만.',ruling:'소결: 어깨 평균 {drop}점 감소, {pct}% 개선.',evidence:[],notes:''},
+  {id:'back',name:'허리',hypothesis:'허리는 피해자, 범인은 엉덩이입니다.',statement:'지금 허리의 불편감을 0~10으로 진술해 주세요.',check:'앉은 채 몸통을 조금 숙여 허리 느낌, 또는 일어나 3걸음 걷기.',reset:['한쪽만: 의자 위 뒷주머니 위치에 공, 무릎을 벌리며 체중 싣기','힘을 빼고 10초 내쉬기 ×2, 공을 2cm 옮겨 반복','골반을 앞뒤로 작게 5번, 가장 편한 중간점에서 호흡 3회'],compare:'안 푼 다리 vs 푼 다리 들어 올리기. 일어나서 3걸음.',slogan:'엉덩이는 방석이 아닙니다.',keep:'앉을 때 허리를 넣고 배를 조여 등을 세웁니다. 30분마다 자세를 바꿉니다.',safety:'다리로 뻗치는 통증·저림이 있으면 공은 생략하고 골반 흔들기만.',ruling:'소결: 허리 평균 {drop}점 감소, {pct}% 개선.',evidence:[],notes:''},
+  {id:'knee',name:'무릎',hypothesis:'무릎은 2층입니다. 1층(발)과 3층(엉덩이)이 결정합니다.',statement:'지금 무릎의 불편감을 0~10으로 진술해 주세요.',check:'의자에서 천천히 일어나기 1회. 무릎 방향과 불편한 지점을 기억합니다.',reset:['한쪽만: 허벅지 앞 중앙을 공이나 손바닥으로 누른 채 무릎 구부렸다 폈다 ×10','발 3점을 바닥에, 무릎은 둘째 발가락 방향','무릎을 2%만 구부린 채 엉덩이를 접어 일어나기 ×3'],compare:'안 푼 다리 vs 푼 다리 들기. 같은 속도로 한 번 더 일어나 비교.',slogan:'무릎은 2층입니다.',keep:'서 있을 때 무릎 2% 구부리기 — 엘리베이터와 신호등에서 연습.',safety:'수술 직후·부종·열감이 있으면 압박은 생략하고 일어나기만.',ruling:'소결: 무릎 평균 {drop}점 감소, {pct}% 개선.',evidence:[],notes:''}
+];
+const PARTS=(SPEC.parts&&SPEC.parts.length===5?SPEC.parts:FALLBACK_PARTS).map(p=>Object.assign({},FALLBACK_PARTS.find(f=>f.id===p.id)||{},p));
+const PART_BY={};PARTS.forEach(p=>PART_BY[p.id]=p);
+const PART_ICON={foot:'①',neck:'②',shoulder:'③',back:'④',knee:'⑤'};
+const FEEL=['통증이 사라짐','훨씬 가벼워짐','조금 부드러워짐','변화 없음','더 불편해짐'];
+const AGES=['20대','30대','40대','50대 이상'];
+const VERDICT=Object.assign({headline:'전후 응답 {pairs}건 중 {pct}%가 좋아졌고, 평균 {drop}점 감소했습니다',order:'',reason:'',condition:'',limit:'교육 직후 익명 자기보고 집계입니다. 대조군이 없으며 의학적 진단·치료 효과를 의미하지 않습니다.'},SPEC.verdict||{});
+
+/* ---------- utils ---------- */
+const $=(s,r)=>(r||document).querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt1=n=>(Math.round(n*10)/10).toFixed(1);
+const pct=(a,b)=>b?Math.round(a/b*100):0;
+const tpl=(s,o)=>String(s||'').replace(/\{(\w+)\}/g,(m,k)=>o[k]!==undefined?o[k]:m);
+function store(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k));localStorage.setItem(k,JSON.stringify(v));}catch(e){return null;}}
+function randId(n){const a='abcdefghjkmnpqrstuvwxyz23456789';let s='';const c=new Uint8Array(n);(window.crypto&&crypto.getRandomValues)?crypto.getRandomValues(c):c.forEach((_,i)=>c[i]=Math.floor(Math.random()*256));for(let i=0;i<n;i++)s+=a[c[i]%a.length];return s;}
+function qs(){const o={};new URLSearchParams(location.search).forEach((v,k)=>o[k]=v);return o;}
+function drawQR(canvas,text){
+  const q=window.QRCodeGen(text,'M'),n=q.getModuleCount(),cell=8,quiet=4,size=(n+quiet*2)*cell;
+  canvas.width=size;canvas.height=size;const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,size,size);ctx.fillStyle='#0B1730';
+  for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(q.isDark(r,c))ctx.fillRect((c+quiet)*cell,(r+quiet)*cell,cell,cell);
+}
+const kindClass=k=>/문헌|lit/.test(k)?'lit':/현장|site|검증/.test(k)?'site':'exp';
+
+/* ---------- config ---------- */
+const DEFAULTS={session:'suwon-2',title:'수원가정법원 2회차',backend:'',joinBase:'',reviewUrl:'',minN:5,demo:!!window.DEMO_DEFAULT,brand:'JIN.AI 스포츠의학연구소',program:'몸의 법정 · LIVE BODY RESET',contact:'super-skungk@hanmail.net',showContact:true};
+let cfg=Object.assign({},DEFAULTS,store('jr.cfg')||{});
+if(window.DEMO_DEFAULT&&!cfg.backend)cfg.demo=true;
+function saveCfg(){store('jr.cfg',cfg);}
+function joinBase(){if(cfg.joinBase)return cfg.joinBase;return location.origin+location.pathname;}
+function joinUrl(part,phase){const b=joinBase();return b+(b.includes('?')?'&':'?')+'mode=join&s='+encodeURIComponent(cfg.session)+'&p='+part+'&t='+phase;}
+
+/* ---------- backend ---------- */
+const api={
+  async rows(session){
+    if(cfg.demo)return demo.rows();
+    if(!cfg.backend)throw new Error('no-backend');
+    const r=await fetch(cfg.backend+(cfg.backend.includes('?')?'&':'?')+'action=rows&session='+encodeURIComponent(session)+'&_='+Date.now(),{cache:'no-store'});
+    const j=await r.json();if(!j.ok)throw new Error(j.error||'rows failed');return j.rows||[];
+  },
+  async submit(d){
+    if(cfg.demo){demo.add(d);return {ok:true};}
+    if(!cfg.backend)throw new Error('no-backend');
+    const body=JSON.stringify(d);
+    try{const r=await fetch(cfg.backend,{method:'POST',body});const j=await r.json();if(!j.ok)throw new Error(j.error||'submit failed');return j;}
+    catch(e){await fetch(cfg.backend,{method:'POST',body,mode:'no-cors'});return {ok:true,opaque:true};}
+  },
+  async ping(){
+    if(cfg.demo)return {ok:true,demo:true};
+    const r=await fetch(cfg.backend+(cfg.backend.includes('?')?'&':'?')+'action=ping&_='+Date.now(),{cache:'no-store'});return r.json();
+  }
+};
+
+/* ---------- demo data (가상, 화면에 항상 표시) ---------- */
+const demo=(function(){
+  let seed=20260903;const rnd=()=>{seed=(seed*1103515245+12345)&0x7fffffff;return seed/0x7fffffff;};
+  const rows=[];const N=38;
+  const base={foot:4.2,neck:5.6,shoulder:5.9,back:5.1,knee:3.8};
+  for(let i=0;i<N;i++){const token='demo'+i;PARTS.forEach(p=>{
+    const pre=Math.max(0,Math.min(10,Math.round(base[p.id]+(rnd()-0.5)*5)));
+    rows.push({token,part:p.id,phase:'pre',score:pre,extra:{}});
+    if(rnd()<0.86){const drop=pre===0?0:Math.max(-1,Math.min(pre,Math.round(rnd()*4-0.9)));rows.push({token,part:p.id,phase:'post',score:Math.max(0,Math.min(10,pre-drop)),extra:{}});}
+  });}
+  return {rows:()=>rows.slice(),add:d=>rows.push(Object.assign({},d))};
+})();
+
+/* ---------- stats ---------- */
+function computeStats(rows,manual){
+  const latest={};rows.forEach(r=>{if(!PART_BY[r.part]||(r.phase!=='pre'&&r.phase!=='post'))return;const s=Number(r.score);if(!(s>=0&&s<=10))return;latest[r.token+'|'+r.part+'|'+r.phase]=s;});
+  const tokens=new Set();Object.keys(latest).forEach(k=>tokens.add(k.split('|')[0]));
+  const parts={};let allPairs=[],allPos=0;const personPairs={};
+  PARTS.forEach(p=>{
+    const pre=[],post=[],pairs=[];let posPairs=0;const dist=Array(11).fill(0);
+    tokens.forEach(t=>{const a=latest[t+'|'+p.id+'|pre'],b=latest[t+'|'+p.id+'|post'];
+      if(a!==undefined){pre.push(a);dist[a]++;}if(b!==undefined)post.push(b);
+      if(a!==undefined&&b!==undefined){pairs.push(a-b);if(a>=1)posPairs++;(personPairs[t]=personPairs[t]||[]).push(a-b);}});
+    let src='live';
+    if(pairs.length===0&&manual&&manual[p.id]){const m=manual[p.id];src='manual';
+      for(let i=0;i<(m.same||0);i++)pairs.push(0);for(let i=0;i<(m.d1||0);i++)pairs.push(1);for(let i=0;i<(m.d2||0);i++)pairs.push(2);for(let i=0;i<(m.d3||0);i++)pairs.push(3);for(let i=0;i<(m.worse||0);i++)pairs.push(-1);posPairs=pairs.length;}
+    const mean=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+    parts[p.id]={nPre:pre.length,nPost:post.length,meanPre:mean(pre),meanPost:mean(post),dist,nPairs:pairs.length,nPos:posPairs,meanDrop:mean(pairs),imp1:pairs.filter(d=>d>=1).length,imp2:pairs.filter(d=>d>=2).length,same:pairs.filter(d=>d===0).length,worse:pairs.filter(d=>d<0).length,src};
+    allPairs=allPairs.concat(pairs);allPos+=posPairs;
+  });
+  const persons=Object.keys(personPairs);const personsImproved=persons.filter(t=>personPairs[t].some(d=>d>=1)).length;
+  const mean=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+  return {parts,participants:tokens.size,nPairs:allPairs.length,nPos:allPos,meanDrop:mean(allPairs),imp1:allPairs.filter(d=>d>=1).length,imp2:allPairs.filter(d=>d>=2).length,same:allPairs.filter(d=>d===0).length,worse:allPairs.filter(d=>d<0).length,persons:persons.length,personsImproved,dropDist:{0:allPairs.filter(d=>d<=0).length,1:allPairs.filter(d=>d===1).length,2:allPairs.filter(d=>d===2).length,3:allPairs.filter(d=>d>=3).length}};
+}
+
+/* ============================================================
+   PARTICIPANT
+   ============================================================ */
+function runJoin(q){
+  document.body.classList.add('join');
+  const app=$('#app');
+  const session=String(q.s||'').slice(0,64),part=PART_BY[q.p],phase=q.t==='post'?'post':(q.t==='pre'?'pre':null);
+  cfg.session=session||cfg.session;
+  if(!part||!phase||!session){app.innerHTML='<div class="join-wrap"><div class="join-card"><div class="join-error">잘못된 QR입니다. 화면의 QR을 다시 찍어 주세요.<br><small>(부위·시점·세션 정보가 없습니다)</small></div></div></div>';return;}
+  let token=store('jr.token');if(!token){token=randId(12);store('jr.token',token);}
+  const myKey='jr.my.'+session;const my=store(myKey)||{};
+  let score=null,feel=null,age=null,disturb=null;
+  const already=my[part.id]&&my[part.id][phase]!==undefined;
+  function render(){
+    app.innerHTML=`<div class="join-wrap">
+      <div class="join-head"><span>${esc(cfg.brand)}</span><span>${esc(cfg.title||session)}</span></div>
+      <div class="join-card">
+        <span class="phase ${phase}">${phase==='pre'?'진술 · 강의 전':'재검사 · 실습 후'}</span>
+        <h1>${esc(part.name)} ${phase==='pre'?'지금 불편감은?':'지금은 몇 점입니까?'}</h1>
+        <div class="q">${phase==='pre'?'방금 한 확인 동작에서 느낀 지금 이 순간의 불편감. 0점 = 전혀 불편하지 않음, 10점 = 매우 심하게 불편함.':'같은 확인 동작을 다시 한 뒤, 지금 이 순간의 불편감. 공을 누를 때 아픔이 아닙니다. 좋아졌으면 좋아진 만큼, 같으면 같게, 더 불편하면 높게.'}</div>
+        ${already?`<div class="fine" style="color:#0B7A47;font-weight:700">이미 제출했습니다 (${my[part.id][phase]}점). 다시 고르면 마지막 값으로 바뀝니다.</div>`:''}
+        <div class="scale" id="scale">${Array.from({length:11},(_,i)=>`<button type="button" data-v="${i}" class="${score===i?'on':''}">${i}</button>`).join('')}<div class="ends"><span>0 전혀 없음</span><span>10 매우 심함</span></div></div>
+        ${phase==='pre'?`<div class="q" style="margin-top:22px">이 불편감이 평소 업무 집중을 방해합니까? <small style="color:var(--text-3)">(선택)</small></div><div class="chips" id="disturb">${[1,2,3,4,5].map(i=>`<button type="button" data-v="${i}" class="${disturb===i?'on':''}">${i}${i===1?' 전혀':i===5?' 매우':''}</button>`).join('')}</div>
+        <div class="q" style="margin-top:18px">연령대 <small style="color:var(--text-3)">(선택)</small></div><div class="chips" id="age">${AGES.map(a=>`<button type="button" data-v="${esc(a)}" class="${age===a?'on':''}">${esc(a)}</button>`).join('')}</div>`
+        :`<div class="q" style="margin-top:22px">몸의 느낌은 어떻게 변했습니까? <small style="color:var(--text-3)">(선택)</small></div><div class="chips" id="feel">${FEEL.map(f=>`<button type="button" data-v="${esc(f)}" class="${feel===f?'on':''}">${esc(f)}</button>`).join('')}</div>`}
+        <button class="submit" id="submit" ${score===null?'disabled':''}>제출</button>
+        <div class="fine">익명 자기평가입니다. 이름·연락처·소속을 받지 않으며, 개인 결과는 기관에 전달되지 않습니다. 이 휴대폰의 무작위 번호로만 강의 전·후를 짝지어 집계합니다. 날카로운 통증·저림·어지럼이 있으면 실습을 중단하세요.</div>
+      </div></div>`;
+    $('#scale').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;score=Number(b.dataset.v);render();});
+    ['disturb','age','feel'].forEach(id=>{const el=$('#'+id);if(!el)return;el.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const v=b.dataset.v;if(id==='disturb')disturb=disturb===Number(v)?null:Number(v);if(id==='age')age=age===v?null:v;if(id==='feel')feel=feel===v?null:v;render();});});
+    $('#submit').addEventListener('click',submit);
+  }
+  async function submit(){
+    const btn=$('#submit');btn.disabled=true;btn.textContent='보내는 중…';
+    const extra={};if(disturb)extra.disturb=disturb;if(age)extra.age=age;if(feel)extra.feel=feel;
+    try{await api.submit({session,token,part:part.id,phase,score,extra});
+      my[part.id]=my[part.id]||{};my[part.id][phase]=score;store(myKey,my);renderDone();}
+    catch(e){btn.disabled=false;btn.textContent='다시 시도';const f=document.createElement('div');f.className='join-error';f.style.marginTop='12px';f.textContent='전송에 실패했습니다. 와이파이·데이터 연결을 확인하고 다시 눌러 주세요.';btn.after(f);}
+  }
+  async function renderDone(){
+    const pre=my[part.id]&&my[part.id].pre,post=my[part.id]&&my[part.id].post;
+    let mine='',card='';
+    if(phase==='post'&&pre!==undefined){const d=pre-post;mine=`<div class="mine">${esc(part.name)} 강의 전 <b>${pre}점</b> → 지금 <b>${post}점</b><br>${d>0?`<b style="color:#0B7A47">${d}점 감소</b>`:d===0?'변화 없음 — 범위·속도·부위를 다시 관찰해 보세요':`<b style="color:#B42318">${-d}점 증가</b> — 실습을 중단하고 무리하지 마세요`}</div>`;
+      card=`<div class="card-verdict"><b>나의 판결문 · ${esc(part.name)}</b><br>주문: ${d>0?'오늘의 개입은 이 부위의 불편감을 달라지게 했다.':d===0?'오늘의 개입만으로는 변화가 확인되지 않았다.':'오늘의 개입은 이 부위에 맞지 않았다.'}<br>이유: 같은 기준의 사전 ${pre}점 → 사후 ${post}점.<br>조건: ${d>0?esc(part.keep||'')+' 재발하면 같은 기준으로 재검사한다.':'무리하지 않는다. 지속되거나 저림·힘 빠짐이 있으면 의료기관 평가를 받는다.'}</div>`;}
+    else mine=`<div class="mine">${esc(part.name)} ${phase==='pre'?'강의 전':'실습 후'} <b>${score}점</b> 기록됨</div>`;
+    app.innerHTML=`<div class="join-wrap"><div class="join-head"><span>${esc(cfg.brand)}</span><span>${esc(cfg.title||session)}</span></div>
+      <div class="join-card"><div class="done"><div class="check">✓</div><h2>제출 완료</h2><div class="q">휴대폰을 내려놓고 화면을 봐 주세요.</div>${mine}${card}
+      <div class="group" id="group"><div class="l">이 강의장 전체 · 실시간</div><div class="v">집계 중…</div></div>
+      <div class="fine">교육 직후 익명 자기보고 집계이며 대조군이 없습니다. 의학적 진단이나 치료 효과를 의미하지 않습니다.${phase==='post'?' 변화가 없거나 악화되면 무리하지 말고 전문가와 상담하세요.':''}</div></div></div></div>`;
+    try{const st=computeStats(await api.rows(session)),ps=st.parts[part.id];const g=$('#group');
+      if(phase==='pre'||ps.nPairs===0)g.innerHTML=`<div class="l">이 강의장 전체 · ${esc(part.name)} 강의 전</div><div class="v">${ps.nPre?fmt1(ps.meanPre)+'점':'—'}</div><div class="m">응답 ${ps.nPre}명 평균</div>`;
+      else g.innerHTML=`<div class="l">이 강의장 전체 · ${esc(part.name)}</div><div class="v good">평균 ${fmt1(ps.meanDrop)}점 감소</div><div class="m">${fmt1(ps.meanPre)} → ${fmt1(ps.meanPost)}점 · 전후 응답 ${ps.nPairs}건 · 사전 1점 이상 중 ${pct(ps.imp1,ps.nPos)}%가 1점 이상 감소</div>`;
+    }catch(e){const g=$('#group');if(g)g.innerHTML='<div class="l">이 강의장 전체</div><div class="m">집계를 불러오지 못했습니다. 화면을 봐 주세요.</div>';}
+  }
+  render();
+}
+
+/* ============================================================
+   PRESENTER — 슬라이드 시퀀스: SPEC.slides(앞부분) → 부위 5개 × (진술 QR · 증거조사 · 재검사 QR) → SPEC.slides(뒷부분) → 참고문헌
+   ============================================================ */
+function buildSlides(){
+  const common=(SPEC.slides&&SPEC.slides.length)?SPEC.slides.slice():[{id:'open',type:'open',min:1,title:'오늘 재판장은 여러분입니다'}];
+  let cut=common.findIndex(s=>['verdict','close'].includes(s.type)||s.after_parts===true);
+  if(cut<0)cut=common.length;
+  const pre=common.slice(0,cut),post=common.slice(cut);
+  const seq=[];
+  pre.forEach(s=>seq.push(Object.assign({min:1},s)));
+  PARTS.forEach(p=>{seq.push({id:'qr-'+p.id+'-pre',type:'qr',part:p.id,phase:'pre',min:1.5});seq.push({id:'practice-'+p.id,type:'practice',part:p.id,min:5});seq.push({id:'qr-'+p.id+'-post',type:'qr',part:p.id,phase:'post',min:1.5});});
+  post.forEach(s=>seq.push(Object.assign({min:1},s)));
+  if(!seq.some(s=>s.type==='verdict'))seq.push({id:'verdict',type:'verdict',min:2,title:'판결'});
+  if(SPEC.references&&SPEC.references.length)seq.push({id:'references',type:'references',min:0,title:'참고 근거'});
+  let acc=0;seq.forEach(x=>{acc+=Number(x.min)||0;x.cum=acc;});
+  return seq;
+}
+const SLIDES=buildSlides();
+let idx=Math.max(0,Math.min(SLIDES.length-1,Number(store('jr.idx.'+cfg.session))||0));
+let startedAt=store('jr.start.'+cfg.session)||null;
+let rows=[],stats=computeStats([],null),lastFetch=null,fetchErr=null,pollTimer=null,revealed=false,notesOn=false,toastTimer=null;
+function manual(){return store('jr.manual.'+cfg.session)||{};}
+
+function chromeStatus(){
+  if(cfg.demo)return '<span class="pill demo">데모 데이터 (가상)</span>';
+  if(!cfg.backend)return '<span class="pill off">백엔드 미설정 · S 키</span>';
+  if(fetchErr)return '<span class="pill off">수집 서버 연결 실패</span>';
+  return '<span class="pill live">LIVE'+(lastFetch?' · '+lastFetch:'')+'</span>';
+}
+function clockHtml(){
+  const sl=SLIDES[idx];const el=startedAt?Math.floor((Date.now()-startedAt)/1000):0;
+  const mm=String(Math.floor(el/60)).padStart(2,'0'),ss=String(el%60).padStart(2,'0');
+  const over=startedAt&&el>sl.cum*60;
+  return `<span class="num ${over?'over':''}">경과 ${mm}:${ss}</span><span class="num" style="color:var(--ink-3)">목표 ${Math.floor(sl.cum)}:${String(Math.round((sl.cum%1)*60)).padStart(2,'0')}</span><span class="num">${idx+1} / ${SLIDES.length}</span>`;
+}
+const cardsHtml=(cards,cls)=>cards&&cards.length?`<div class="cols c${Math.min(5,Math.max(2,cards.length))}">${cards.map((c,i)=>`<div class="card ${cls?cls(c,i):''}"><div class="k">${esc(c.k)}</div><div class="t">${esc(c.t)}</div>${c.d?`<div class="d">${esc(c.d)}</div>`:''}</div>`).join('')}</div>`:'';
+const evHtml=ev=>ev&&ev.length?`<div class="ev">${ev.map(e=>`<div class="e"><span class="b ${kindClass(e.kind)}">${esc(e.kind)}</span><div><div class="x">${esc(e.text)}</div>${e.source?`<div class="s">${esc(e.source)}${e.confidence?` · 근거 신뢰도 ${esc(e.confidence)}`:''}</div>`:''}</div></div>`).join('')}</div>`:'';
+
+const R={
+  generic(sl){return `${sl.eyebrow?`<div class="eyebrow">${esc(sl.eyebrow)}</div>`:''}<h2 class="${sl.type==='open'?'serif':''}">${esc(sl.title)}</h2>${sl.lead?`<div class="lead">${esc(sl.lead)}</div>`:''}${cardsHtml(sl.cards,(c,i)=>sl.type==='rules'?'':'')}${sl.quote?`<div class="quote">${esc(sl.quote)}</div>`:''}${sl.safety?`<div class="safety">${esc(sl.safety)}</div>`:''}${sl.type==='open'?`<div class="sub">${esc(cfg.brand)} · 감정인: 스포츠의학 박사 김진 · ${esc(cfg.title||cfg.session)}</div>`:''}`;},
+  issues(sl){const a=(SPEC.answers||[]);const cards=(sl.cards&&sl.cards.length)?sl.cards:a.map(x=>({k:'쟁점 '+x.no,t:x.question}));return `<div class="eyebrow">${esc(sl.eyebrow||'쟁점 정리')}</div><h2>${esc(sl.title)}</h2>${sl.lead?`<div class="lead">${esc(sl.lead)}</div>`:''}<div class="cols c4 issues-grid" style="margin-top:20px">${cards.map(c=>`<div class="card"><div class="k">${esc(c.k)}</div><div class="t" style="font-size:clamp(15px,1.5vw,21px)">${esc(c.t)}</div>${c.d?`<div class="d" style="font-size:clamp(12px,1.15vw,16px)">${esc(c.d)}</div>`:''}</div>`).join('')}</div>${sl.ruling?`<div class="rulingbar"><div class="k">원칙</div><div><div class="t">${esc(sl.ruling)}</div>${sl.action?`<div class="a">${esc(sl.action)}</div>`:''}</div></div>`:''}`;},
+  issue(sl){const ans=(SPEC.answers||[]).find(a=>a.no===sl.question_no);return `<div class="eyebrow">${esc(sl.eyebrow||('쟁점 '+(sl.question_no||'')))}</div><h2>${sl.question_no?`<span class="qno">${sl.question_no}</span>`:''}${esc(sl.title)}</h2>${sl.lead?`<div class="lead">${esc(sl.lead)}</div>`:''}<div class="issue"><div><div class="card warm"><div class="k">주장 · 가설</div><div class="t">${esc(sl.hypothesis||(ans&&ans.conclusion)||'')}</div>${sl.counter?`<div class="d"><b>반대 가설:</b> ${esc(sl.counter)}</div>`:''}</div>${sl.action||(ans&&ans.today_check)?`<div class="card cool" style="margin-top:14px"><div class="k">오늘 현장 확인</div><div class="d" style="color:var(--ink)">${esc(sl.action||ans.today_check)}</div></div>`:''}</div><div>${evHtml(sl.evidence)}${(!sl.evidence||!sl.evidence.length)&&ans?`<div class="ev">${ans.grounds.map(g=>`<div class="e"><span class="b lit">근거</span><div class="x">${esc(g)}</div></div>`).join('')}</div>`:''}</div></div>${sl.ruling||(ans&&ans.conclusion)?`<div class="rulingbar"><div class="k">판단</div><div><div class="t">${esc(sl.ruling||ans.conclusion)}</div></div></div>`:''}${sl.safety?`<div class="safety">${esc(sl.safety)}</div>`:''}`;},
+  practice(sl){const p=PART_BY[sl.part];return `<div class="eyebrow">증거조사 ${PART_ICON[p.id]||''} · ${esc(p.name)} · 5분</div><h2>${esc(p.slogan)}</h2><div class="hyp"><span class="tag">주장</span><span class="x">${esc(p.hypothesis)}</span>${p.counter?`<span class="tag" style="color:var(--ink-3)">반대 가설</span><span class="x" style="color:var(--ink-3)">${esc(p.counter)}</span>`:''}</div><div class="cols c3"><div class="card"><div class="k">현장 검증 · 체크</div><div class="d">${esc(p.check)}</div></div><div class="card cool"><div class="k">개입 실험 · 10초 리셋 · 한쪽만</div><div class="d"><ul>${(p.reset||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div></div><div class="card warm"><div class="k">대질 · 좌우 비교</div><div class="d">${esc(p.compare)}</div><div class="d" style="margin-top:12px;color:var(--amber-2)"><b>집행(유지):</b> ${esc(p.keep)}</div></div></div>${p.evidence&&p.evidence.length?`<div class="evchips">${p.evidence.slice(0,2).map(e=>`<span><b>${esc(e.kind)}</b>${esc(e.text)}${e.source?` <i style="color:var(--ink-3)">(${esc(e.source)})</i>`:''}</span>`).join('')}</div>`:''}<div class="safety">${esc(p.safety)}</div>`;},
+  qr(sl){const p=PART_BY[sl.part],pre=sl.phase==='pre',url=joinUrl(p.id,sl.phase),ps=stats.parts[p.id];
+    let board='';
+    if(pre){board=`<div class="stat"><div class="l">진술 접수</div><div class="v num">${ps.nPre}<small>명</small></div><div class="m">${esc(p.statement||'휴대폰으로 QR을 찍고 지금 불편감을 0~10으로 입력합니다')}</div></div>
+      <div class="stat"><div class="l">이 강의장 ${esc(p.name)} 강의 전 평균</div><div class="v num amber">${ps.nPre?fmt1(ps.meanPre):'—'}<small>/ 10</small></div><div class="dist">${ps.dist.map((c,i)=>`<div class="bar ${c===Math.max(...ps.dist)&&c>0?'hot':''}" style="height:${ps.nPre?Math.max(3,c/Math.max(...ps.dist)*100):3}%"><span>${c||''}</span><i>${i}</i></div>`).join('')}</div></div>`;}
+    else{const show=ps.nPairs>0;const vals={drop:show?fmt1(ps.meanDrop):'—',pct:show?pct(ps.imp1,ps.nPos):'—',pct2:show?pct(ps.imp2,ps.nPos):'—',pairs:ps.nPairs,pos:ps.nPos,same:show?pct(ps.same,ps.nPairs):'—'};
+      board=`<div class="stat row"><div><div class="l">강의 전</div><div class="v num">${ps.nPre?fmt1(ps.meanPre):'—'}</div></div><div class="arrow">→</div><div><div class="l">실습 후</div><div class="v num ${show?'good':''}">${ps.nPost?fmt1(ps.meanPost):'—'}</div></div><div class="m" style="grid-column:1/-1">사후 응답 ${ps.nPost}명 · 전후 짝 ${ps.nPairs}명${ps.src==='manual'?' · <span class="pill manual">수기 집계</span>':''}</div></div>
+      <div class="stat"><div class="l">${esc(p.name)} 불편감 감소 · 전체 평균</div><div class="v num ${show?'good':''}">${show?fmt1(ps.meanDrop)+'<small>점 감소</small>':'<span class="waiting">재검사 입력을 기다리는 중…</span>'}</div><div class="m">${show?`사전 1점 이상 ${ps.nPos}건 중 <b style="color:var(--green)">${pct(ps.imp1,ps.nPos)}%</b> 1점 이상 감소 · 2점 이상 ${pct(ps.imp2,ps.nPos)}% · 전체 ${ps.nPairs}건 중 변화 없음 ${pct(ps.same,ps.nPairs)}% · 증가 ${pct(ps.worse,ps.nPairs)}%${ps.nPairs<cfg.minN?` · <span style="color:var(--amber)">N&lt;${cfg.minN} 참고용</span>`:''}`:'같은 부위, 같은 0~10 기준으로 다시 입력합니다'}</div>${show&&p.ruling?`<div class="m" style="color:var(--green);font-weight:700;margin-top:10px">${esc(tpl(p.ruling,vals))}</div>`:''}</div>`;}
+    return `<div class="eyebrow">${pre?'진술 접수 · BEFORE':'재검사 · AFTER'} · ${esc(p.name)}</div><h2>${pre?`${esc(p.name)} — 지금 불편감은 몇 점입니까?`:`${esc(p.name)} — 재검사: 지금은 몇 점입니까?`}</h2><div class="qrwrap"><div><div class="qrbox"><canvas id="qr"></canvas></div><div class="qrurl">${esc(url)}</div></div><div class="board">${board}</div></div>${pre?'':'<div class="statement">좋아졌으면 좋아진 만큼, 같으면 같게, 더 불편하면 높게 — 솔직한 숫자만 증거가 됩니다.</div>'}`;},
+  verdict(sl){
+    if(!revealed)return `<div class="eyebrow">${esc(sl.eyebrow||'판결 · LIVE RESULT')}</div><h2 class="serif">${esc(sl.title||'오늘 이 강의장은 얼마나 달라졌습니까?')}</h2>${sl.lead?`<div class="lead">${esc(sl.lead)}</div>`:''}<div class="reveal"><button id="revealBtn">판결 선고</button></div><div class="disclaimer">좋아진 분도, 그대로인 분도, 더 불편해진 분도 모두 증거입니다. 정상 전후응답만 익명 집계합니다.</div>`;
+    const st=stats,ok=st.nPairs>0;const vals={pairs:st.nPairs,pos:st.nPos,pct:ok?pct(st.imp1,st.nPos):'—',pct2:ok?pct(st.imp2,st.nPos):'—',same:ok?pct(st.same,st.nPairs):'—',drop:ok?fmt1(st.meanDrop):'—',participants:st.participants};
+    const rowsHtml=PARTS.map(p=>{const s=st.parts[p.id];return `<tr><td>${esc(p.name)}</td><td class="num">${s.nPre?fmt1(s.meanPre):'—'}</td><td class="num">${s.nPost?fmt1(s.meanPost):'—'}</td><td class="num good">${s.nPairs?fmt1(s.meanDrop):'—'}</td><td class="num">${s.nPos?pct(s.imp1,s.nPos)+'%':'—'}</td><td class="num">${s.nPairs}${s.src==='manual'?'*':''}</td></tr>`;}).join('');
+    const d=st.dropDist,tot=st.nPairs||1;
+    return `<div class="eyebrow">판결 · ${esc(cfg.title||cfg.session)}</div><h2 class="serif">${ok?esc(tpl(VERDICT.headline,vals)):'아직 전후 짝이 없습니다 — 재검사 입력을 기다리는 중'}</h2>
+    <div class="finale-grid"><div><div class="big"><div class="stat"><div class="l">참여자</div><div class="v num" data-count="${st.participants}">0<small>명</small></div><div class="m">익명 기기 기준 · 전후 짝 ${st.persons}명</div></div><div class="stat"><div class="l">1개 부위 이상 1점 넘게 내려간 참여자</div><div class="v num good" data-count="${pct(st.personsImproved,st.persons)}">0<small>%</small></div><div class="m">${st.personsImproved} / ${st.persons}명 · 사전 0점은 판정 제외</div></div><div class="stat"><div class="l">평균 불편감 감소</div><div class="v num good" data-count="${ok?fmt1(st.meanDrop):0}" data-dec="1">0<small>점</small></div><div class="m">전후 응답 ${st.nPairs}건 기준</div></div><div class="stat"><div class="l">2점 이상 감소</div><div class="v num amber" data-count="${pct(st.imp2,st.nPos)}">0<small>%</small></div><div class="m">${st.imp2}건 / 사전 1점 이상 ${st.nPos}건 · 1점은 오차 범위일 수 있음</div></div></div>
+    <div style="margin-top:14px"><div class="barrow"><span>3점 이상 감소</span><div class="track"><div class="fill" data-w="${pct(d[3],tot)}"></div></div><span class="num">${pct(d[3],tot)}%</span></div><div class="barrow"><span>2점 감소</span><div class="track"><div class="fill" data-w="${pct(d[2],tot)}"></div></div><span class="num">${pct(d[2],tot)}%</span></div><div class="barrow"><span>1점 감소</span><div class="track"><div class="fill" data-w="${pct(d[1],tot)}"></div></div><span class="num">${pct(d[1],tot)}%</span></div><div class="barrow"><span>변화 없음·증가</span><div class="track"><div class="fill same" data-w="${pct(d[0],tot)}"></div></div><span class="num">${pct(d[0],tot)}%</span></div></div></div>
+    <div><table class="parts"><thead><tr><th>부위</th><th>강의 전</th><th>실습 후</th><th>평균 감소</th><th>1점↑감소</th><th>짝 N</th></tr></thead><tbody>${rowsHtml}</tbody></table><div class="verdictdoc">${VERDICT.order?`<b>주문</b> ${esc(tpl(VERDICT.order,vals))}<br>`:''}${VERDICT.reason?`<b>이유</b> ${esc(tpl(VERDICT.reason,vals))}<br>`:''}${VERDICT.condition?`<b>조건</b> ${esc(VERDICT.condition)}<br>`:''}<b>한계</b> ${esc(VERDICT.limit)}${PARTS.some(p=>st.parts[p.id].src==='manual')?' *수기 집계 부위 포함.':''}</div></div></div>`;},
+  references(){return `<div class="eyebrow">참고 근거 · 감정인 제출</div><h2>이 강의가 기댄 근거</h2><div class="refs">${(SPEC.references||[]).map(r=>`<div>${esc(r.citation)}${r.used_for?` — <span style="color:var(--ink-3)">${esc(r.used_for)}</span>`:''}<span class="c">신뢰도 ${esc(r.confidence||'')}</span></div>`).join('')}</div><div class="disclaimer">근거는 일반 원칙 수준이며 개별 진단·치료를 대신하지 않습니다.</div>`;}
+};
+R.open=R.rules=R.bridge=R.close=R.part_intro=R.generic;
+
+function render(){
+  const sl=SLIDES[idx];const app=$('#app');
+  const fn=R[sl.type]||R.generic;const body=fn(sl);
+  const notes=sl.type==='practice'?PART_BY[sl.part].notes:(sl.type==='qr'?(sl.phase==='pre'?'[1.5분] "휴대폰을 들고 찍고, 숫자 하나 누르고, 내려놓기." 응답 수가 올라가는 것을 보여주며 기다린다. '+(PART_BY[sl.part].statement||''):'[1.5분] 같은 기준으로 재검사. 평균 감소 폭과 개선율을 증거처럼 읽어 준다. 변화 없는 분도 데이터라고 말한다.'):(sl.notes||''));
+  app.innerHTML=`<div id="stage"><div class="chrome"><div><b>${esc(cfg.program)}</b> &nbsp;·&nbsp; ${esc(cfg.title||cfg.session)} &nbsp; ${chromeStatus()}</div><div class="clock" id="clock">${clockHtml()}</div></div><div class="slide ${(sl.type==='verdict'&&revealed)||['issue','references','issues','practice','rules','close'].includes(sl.type)?'top':''} ${sl.type==='practice'?'practice':''}">${body}</div><div class="footer"><div>${esc(cfg.brand)} · <span class="kbd">→</span> 다음 <span class="kbd">←</span> 이전 <span class="kbd">S</span> 설정 <span class="kbd">N</span> 노트 <span class="kbd">R</span> 리포트 <span class="kbd">M</span> 수기집계 <span class="kbd">F</span> 전체화면 <span class="kbd">T</span> 타이머</div><div class="nav"><button id="refreshBtn">새로고침</button><button id="prevBtn">◀ 이전</button><button id="nextBtn">다음 ▶</button></div></div></div>${notesOn?`<div class="notes"><h4>강사 노트</h4>${esc(notes||'(노트 없음)')}</div>`:''}`;
+  if(sl.type==='qr'){try{drawQR($('#qr'),joinUrl(sl.part,sl.phase));}catch(e){}}
+  autoFit();
+  if(sl.type==='verdict'){const b=$('#revealBtn');if(b)b.addEventListener('click',()=>{revealed=true;render();});if(revealed)animateFinale();}
+  $('#prevBtn').addEventListener('click',()=>go(idx-1));$('#nextBtn').addEventListener('click',()=>go(idx+1));$('#refreshBtn').addEventListener('click',()=>refresh(true));
+  store('jr.idx.'+cfg.session,idx);
+}
+function autoFit(){const el=$('.slide');if(!el)return;el.style.zoom='';let z=1;for(let i=0;i<4;i++){const ratio=el.clientHeight/el.scrollHeight;if(ratio>=0.995)break;z=Math.max(0.5,z*ratio*0.97);el.style.zoom=z.toFixed(3);}}
+window.addEventListener('resize',()=>autoFit());
+function animateFinale(){
+  document.querySelectorAll('[data-count]').forEach(el=>{const target=Number(el.dataset.count),dec=Number(el.dataset.dec||0),small=el.querySelector('small')?el.querySelector('small').outerHTML:'';const t0=performance.now(),dur=1400;
+    (function step(t){const k=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-k,3);el.innerHTML=(target*e).toFixed(dec)+small;if(k<1)requestAnimationFrame(step);})(t0);});
+  requestAnimationFrame(()=>document.querySelectorAll('.fill[data-w]').forEach(el=>el.style.width=el.dataset.w+'%'));
+}
+function go(n){if(n<0||n>=SLIDES.length)return;idx=n;if(!startedAt&&idx>0){startedAt=Date.now();store('jr.start.'+cfg.session,startedAt);}render();schedulePoll();}
+async function refresh(force){
+  const sl=SLIDES[idx];if(!force&&sl.type!=='qr'&&sl.type!=='verdict')return;
+  try{rows=await api.rows(cfg.session);fetchErr=null;lastFetch=new Date().toLocaleTimeString('ko-KR',{hour12:false});}
+  catch(e){fetchErr=e.message;}
+  stats=computeStats(rows,manual());
+  if(sl.type==='qr'||(sl.type==='verdict'&&revealed===false)||force)render();
+}
+function schedulePoll(){clearInterval(pollTimer);const sl=SLIDES[idx];if(sl.type==='qr'||sl.type==='verdict'){refresh();pollTimer=setInterval(refresh,5000);}}
+function toast(msg){let t=$('.toast');if(!t){t=document.createElement('div');t.className='toast';document.body.appendChild(t);}t.textContent=msg;clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.remove(),2200);}
+
+/* overlays */
+function closeOverlay(){const o=$('.overlay');if(o)o.remove();}
+function openSettings(){
+  closeOverlay();const o=document.createElement('div');o.className='overlay';
+  o.innerHTML=`<div class="panel"><h3>설정</h3>
+  <label>세션 코드 (영문·숫자·하이픈, QR에 포함됨)</label><input type="text" id="f_session" value="${esc(cfg.session)}">
+  <label>세션 표시명</label><input type="text" id="f_title" value="${esc(cfg.title)}">
+  <label>백엔드 URL (Google Apps Script 웹 앱 /exec)</label><input type="url" id="f_backend" value="${esc(cfg.backend)}" placeholder="https://script.google.com/macros/s/.../exec">
+  <label>참가자 페이지 주소 (비우면 현재 주소 사용: ${esc(location.origin+location.pathname)})</label><input type="url" id="f_join" value="${esc(cfg.joinBase)}" placeholder="https://drjinfit-ship-it.github.io/jinkim/web/">
+  <label>복습 자료 URL (선택)</label><input type="url" id="f_review" value="${esc(cfg.reviewUrl)}">
+  <label>퍼센트 표시 최소 N</label><input type="number" id="f_minN" value="${esc(cfg.minN)}" min="1" max="100">
+  <label>브랜드 / 프로그램명 / 연락처</label><input type="text" id="f_brand" value="${esc(cfg.brand)}"><input type="text" id="f_program" value="${esc(cfg.program)}" style="margin-top:6px"><input type="text" id="f_contact" value="${esc(cfg.contact)}" style="margin-top:6px">
+  <div class="row"><label style="margin:0;display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="f_demo" ${cfg.demo?'checked':''}> 데모 모드 (가상 데이터로 리허설)</label><label style="margin:0;display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="f_showContact" ${cfg.showContact?'checked':''}> 마지막 화면에 연락처 표시</label></div>
+  <div class="hint">${location.protocol==='file:'?'<span class="err">지금은 파일로 열려 있어 QR이 참가자 휴대폰에서 열리지 않습니다. GitHub Pages 주소로 배포한 뒤 그 주소로 여세요.</span><br>':''}실제 수집을 하려면 README의 배포 절차대로 Apps Script를 배포하고 위 백엔드 URL을 넣은 뒤 "연결 테스트"를 누르세요. 데모 모드가 켜져 있으면 서버에 아무것도 보내지 않습니다.</div>
+  <div class="row"><button id="f_save">저장</button><button class="ghost" id="f_test">연결 테스트</button><button class="ghost" id="f_reset">진행 초기화 (타이머·슬라이드)</button><button class="ghost" id="f_close">닫기</button><span id="f_msg"></span></div></div>`;
+  document.body.appendChild(o);
+  const read=()=>{cfg.session=$('#f_session').value.trim().replace(/[^A-Za-z0-9_\-.]/g,'-').slice(0,64)||'session';cfg.title=$('#f_title').value.trim();cfg.backend=$('#f_backend').value.trim();cfg.joinBase=$('#f_join').value.trim();cfg.reviewUrl=$('#f_review').value.trim();cfg.minN=Math.max(1,Number($('#f_minN').value)||5);cfg.brand=$('#f_brand').value.trim()||DEFAULTS.brand;cfg.program=$('#f_program').value.trim()||DEFAULTS.program;cfg.contact=$('#f_contact').value.trim();cfg.demo=$('#f_demo').checked;cfg.showContact=$('#f_showContact').checked;saveCfg();};
+  $('#f_save').addEventListener('click',()=>{read();closeOverlay();revealed=false;startedAt=store('jr.start.'+cfg.session)||null;idx=Number(store('jr.idx.'+cfg.session))||0;render();schedulePoll();toast('저장됨');});
+  $('#f_test').addEventListener('click',async()=>{read();const m=$('#f_msg');m.textContent='확인 중…';m.className='';try{const j=await api.ping();m.textContent=j.demo?'데모 모드 — 서버 사용 안 함':'연결 성공';m.className='ok';}catch(e){m.textContent='연결 실패: 배포 URL과 "모든 사용자" 액세스 설정을 확인하세요';m.className='err';}});
+  $('#f_reset').addEventListener('click',()=>{if(!confirm('타이머와 슬라이드 위치를 처음으로 되돌립니다. 수집 데이터는 지워지지 않습니다.'))return;store('jr.start.'+cfg.session,null);startedAt=null;idx=0;revealed=false;closeOverlay();render();});
+  $('#f_close').addEventListener('click',closeOverlay);
+}
+function openManual(){
+  const sl=SLIDES[idx];const pid=sl.part||PARTS[0].id;const m=manual();const cur=m[pid]||{};
+  closeOverlay();const o=document.createElement('div');o.className='overlay';
+  o.innerHTML=`<div class="panel"><h3>수기 집계 (오프라인 대안) · ${esc(PART_BY[pid].name)}</h3><div class="hint">QR이 안 될 때 손들기로 셉니다. "실습 후 몇 점 좋아졌습니까?" — 각 인원수를 입력하면 이 부위의 전후 짝 데이터로 사용됩니다(온라인 짝이 하나라도 있으면 온라인 데이터가 우선).</div>
+  <div class="manual-grid" style="margin-top:14px"><div><label>변화 없음</label><input type="number" id="m_same" min="0" value="${cur.same||0}"></div><div><label>1점 감소</label><input type="number" id="m_d1" min="0" value="${cur.d1||0}"></div><div><label>2점 감소</label><input type="number" id="m_d2" min="0" value="${cur.d2||0}"></div><div><label>3점 이상 감소</label><input type="number" id="m_d3" min="0" value="${cur.d3||0}"></div><div><label>증가</label><input type="number" id="m_worse" min="0" value="${cur.worse||0}"></div></div>
+  <div class="row"><button id="m_save">저장</button><button class="ghost" id="m_clear">이 부위 삭제</button><button class="ghost" id="m_close">닫기</button></div></div>`;
+  document.body.appendChild(o);
+  $('#m_save').addEventListener('click',()=>{m[pid]={same:+$('#m_same').value||0,d1:+$('#m_d1').value||0,d2:+$('#m_d2').value||0,d3:+$('#m_d3').value||0,worse:+$('#m_worse').value||0};store('jr.manual.'+cfg.session,m);closeOverlay();stats=computeStats(rows,manual());render();toast('수기 집계 저장');});
+  $('#m_clear').addEventListener('click',()=>{delete m[pid];store('jr.manual.'+cfg.session,m);closeOverlay();stats=computeStats(rows,manual());render();});
+  $('#m_close').addEventListener('click',closeOverlay);
+}
+function openReport(){
+  const st=stats;const lines=[];
+  lines.push(`# ${cfg.title||cfg.session} — 현장 익명 사전/사후 자기평가 집계 (${new Date().toLocaleString('ko-KR')})`);
+  lines.push(`참여자(익명 기기) ${st.participants}명 · 전후 짝 있는 참여자 ${st.persons}명 · 전후 응답 쌍 ${st.nPairs}건`);
+  lines.push(st.nPairs?`전체: 평균 ${fmt1(st.meanDrop)}점 감소(전후 짝 ${st.nPairs}건) · 사전 1점 이상 ${st.nPos}건 중 1점 이상 감소 ${pct(st.imp1,st.nPos)}% · 2점 이상 ${pct(st.imp2,st.nPos)}% · 전체 짝 중 변화 없음 ${pct(st.same,st.nPairs)}% · 증가 ${pct(st.worse,st.nPairs)}% · 1개 부위 이상 1점 넘게 내려간 참여자 ${pct(st.personsImproved,st.persons)}% (사전 0점은 판정 제외)`:'전후 짝 없음');
+  lines.push('');lines.push('| 부위 | 사전 N | 사전 평균 | 사후 N | 사후 평균 | 짝 N | 사전≥1 짝 | 평균 감소 | 1점↑감소 | 2점↑ | 같음 | 증가 | 출처 |');lines.push('|---|---|---|---|---|---|---|---|---|---|---|---|---|');
+  PARTS.forEach(p=>{const s=st.parts[p.id];lines.push(`| ${p.name} | ${s.nPre} | ${s.nPre?fmt1(s.meanPre):'—'} | ${s.nPost} | ${s.nPost?fmt1(s.meanPost):'—'} | ${s.nPairs} | ${s.nPos} | ${s.nPairs?fmt1(s.meanDrop):'—'} | ${s.nPos?pct(s.imp1,s.nPos)+'%':'—'} | ${s.nPos?pct(s.imp2,s.nPos)+'%':'—'} | ${s.nPairs?pct(s.same,s.nPairs)+'%':'—'} | ${s.nPairs?pct(s.worse,s.nPairs)+'%':'—'} | ${s.src==='manual'?'수기':'온라인'} |`);});
+  lines.push('');lines.push('한계: 교육 직후 익명 자기보고, 대조군 없음(좌우 비교도 비맹검), 의학적 효과를 의미하지 않음. 같은 기기의 무작위 토큰으로 사전·사후를 짝지었으며 미매칭 응답은 평균에만 포함. 감소율 분모는 사전 1점 이상 짝(사전 0점은 바닥효과로 제외). 1점 변화는 오차 범위일 수 있어 2점 이상을 병기.');
+  const csv=['ts,session,token,part,phase,score,extra'].concat(rows.map(r=>[r.ts||'',cfg.session,r.token,r.part,r.phase,r.score,JSON.stringify(r.extra||{})].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','))).join('\n');
+  closeOverlay();const o=document.createElement('div');o.className='overlay';
+  o.innerHTML=`<div class="panel"><h3>D+1 리포트 · ${esc(cfg.title||cfg.session)} ${cfg.demo?'<span class="pill demo">데모 데이터</span>':''}</h3><textarea id="rep" readonly>${esc(lines.join('\n'))}</textarea><div class="row"><button id="r_copy">리포트 복사</button><button class="ghost" id="r_csv">원자료 CSV 보기</button><button class="ghost" id="r_refresh">새로고침</button><button class="ghost" id="r_close">닫기</button></div><div class="hint">원자료는 Google 스프레드시트 "responses" 시트에 그대로 남아 있습니다. 이 화면의 CSV는 현재 불러온 세션 데이터입니다.</div><textarea id="csv" readonly hidden>${esc(csv)}</textarea></div>`;
+  document.body.appendChild(o);
+  $('#r_copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(lines.join('\n'));toast('복사됨');}catch(e){$('#rep').select();}});
+  $('#r_csv').addEventListener('click',()=>{const c=$('#csv');c.hidden=!c.hidden;});
+  $('#r_refresh').addEventListener('click',async()=>{await refresh(true);openReport();});
+  $('#r_close').addEventListener('click',closeOverlay);
+}
+
+function runPresenter(){
+  render();schedulePoll();
+  setInterval(()=>{const c=$('#clock');if(c)c.innerHTML=clockHtml();},1000);
+  document.addEventListener('keydown',e=>{
+    if(e.target&&/INPUT|TEXTAREA/.test(e.target.tagName))return;
+    if(e.key==='Escape'){closeOverlay();return;}
+    if($('.overlay'))return;
+    const k=e.key;
+    if(k==='ArrowRight'||k===' '||k==='PageDown'||k==='Enter'){e.preventDefault();go(idx+1);}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();go(idx-1);}
+    else if(k==='Home'){go(0);}else if(k==='End'){go(SLIDES.length-1);}
+    else if(k==='s'||k==='S')openSettings();else if(k==='n'||k==='N'){notesOn=!notesOn;render();}
+    else if(k==='r'||k==='R')openReport();else if(k==='m'||k==='M')openManual();
+    else if(k==='f'||k==='F'){if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();}
+    else if(k==='t'||k==='T'){startedAt=Date.now();store('jr.start.'+cfg.session,startedAt);toast('타이머 시작');}
+    else if(k==='?'){toast('→ 다음 · ← 이전 · S 설정 · N 노트 · R 리포트 · M 수기집계 · F 전체화면 · T 타이머 재시작');}
+  });
+  if(!cfg.backend&&!cfg.demo)setTimeout(()=>toast('S 키로 백엔드 URL을 설정하거나 데모 모드를 켜세요'),600);
+}
+
+const q=qs();
+if(q.mode==='join')runJoin(q);else runPresenter();
+})();
+</script>
+
+</body>
+</html>
