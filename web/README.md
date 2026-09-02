@@ -5,7 +5,8 @@
 | 구성 | 파일 | 역할 |
 |---|---|---|
 | 발표·참가자 화면 | `web/index.html` | 22장 슬라이드, 10개 QR(5부위 × 사전/사후), 실시간 평균·개선율 보드, 피날레, D+1 리포트 |
-| 소스 | `web/src/app.html`, `web/src/qr-bundle.js`, `web/build.js` | 수정은 `src/app.html`에서 하고 `node build.js`로 `index.html` 재생성 |
+| 소스 | `web/src/app.html`, `web/src/spec.json`, `web/src/qr-bundle.js`, `web/build.js` | 슬라이드 문구·근거·부위 실습은 `src/spec.json`(재판형 설계 스펙)에서, 화면 구조는 `src/app.html`에서 수정하고 `node build.js`로 `index.html` 재생성 |
+| PPTX 배포판 | `web/make-pptx.js` | 같은 스펙으로 복습·배포용 PPTX 생성(QR PNG 내장). `npm install` 후 `node make-pptx.js 출력.pptx --join-base <Pages주소> --session <세션코드>` |
 | 수집 서버 | `web/backend/Code.gs` | Google Apps Script 웹 앱. 익명 응답을 시트에 저장하고 세션별 원자료를 JSON으로 반환 |
 
 ## 왜 claude.ai 아티팩트가 아니라 GitHub Pages인가
@@ -64,6 +65,21 @@ claude.ai 아티팩트는 데이터 저장 기능을 켜면 **조직 내부 로�
 
 ## 5. 수정 방법
 ```bash
-# 슬라이드 문구·부위 내용은 web/src/app.html 의 PARTS / R 객체에서 수정
-cd web && node build.js
+cd web
+npm install                       # 최초 1회 (pptxgenjs)
+# 문구·근거·부위 실습·7질문 답 → src/spec.json / 화면 구조 → src/app.html
+node build.js                     # index.html 재생성
+node make-pptx.js 몸의법정.pptx --join-base https://drjinfit-ship-it.github.io/jinkim/web/ --session suwon-2
 ```
+
+## 6. 재판형 진행 구조 (판사 사고방식)
+
+| 재판 단계 | 강의 요소 | 화면 |
+|---|---|---|
+| 개정·증거능력 고지 | 약속·안전 3원칙·자기보고 한계 공개 | 도입 슬라이드 |
+| 쟁점 정리 | 판사의 질문 7개 | 쟁점 슬라이드 |
+| 진술 접수 | 사전 QR 0~10 | 부위별 사전 QR |
+| 증거조사 | 현장 검증(체크) → 개입 실험(10초 리셋, 한쪽만) → 대질(좌우 비교) | 부위별 실습 |
+| 재검사·소결 | 사후 QR, 부위별 평균 감소·개선율 | 부위별 사후 QR |
+| 판결 | 참여자 수·개선 비율·평균 감소·부위별 표 + 주문/이유/조건/한계 | 판결 슬라이드 |
+| 집행·재심 | 서기·걷기·앉기 유지, 재발 시 같은 기준으로 재검사 | 폐정 슬라이드, 참가자 개인 판결문 카드 |

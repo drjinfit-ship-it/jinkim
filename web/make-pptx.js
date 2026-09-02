@@ -10,7 +10,7 @@ const JOIN = arg('--join-base') || 'https://drjinfit-ship-it.github.io/jinkim/we
 const SESSION = arg('--session') || 'suwon-2';
 
 /* ---- QR → PNG (zlib, 순수 node) ---- */
-global.window = global; require('./src/qr-bundle.js');
+require('./src/qr-bundle.js');
 function crc32(buf) { let c, crc = 0xffffffff; for (let n = 0; n < buf.length; n++) { c = (crc ^ buf[n]) & 0xff; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; crc = (crc >>> 8) ^ c; } return (crc ^ 0xffffffff) >>> 0; }
 function chunk(type, data) { const len = Buffer.alloc(4); len.writeUInt32BE(data.length); const td = Buffer.concat([Buffer.from(type), data]); const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(td)); return Buffer.concat([len, td, crc]); }
 function qrPng(text, scale = 8, quiet = 4) {

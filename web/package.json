@@ -1,0 +1,13 @@
+{
+  "name": "jinai-live-reset",
+  "private": true,
+  "version": "1.0.0",
+  "description": "몸의 법정 — 재판형 강의 웹 시스템 빌드·PPTX 생성",
+  "scripts": {
+    "build": "node build.js",
+    "pptx": "node make-pptx.js"
+  },
+  "devDependencies": {
+    "pptxgenjs": "^3.12.0"
+  }
+}
