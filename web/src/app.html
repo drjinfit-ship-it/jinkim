@@ -1,0 +1,533 @@
+<title>JIN.AI 라이브 리셋</title>
+<meta name="description" content="법원·공공기관 50분 실습 강의 — 5부위 사전/사후 익명 측정과 실시간 결과 보드">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+  :root{
+    --navy:#0B1730; --navy-2:#132446; --navy-3:#1C3260; --ink:#F3F6FB; --ink-2:#C5D0E2; --ink-3:#8FA3BF;
+    --amber:#F5B13D; --amber-2:#FFD27A; --green:#3DD68C; --slate:#8FA3BF; --coral:#FF6B6B;
+    --paper:#F7F9FC; --paper-2:#FFFFFF; --paper-3:#E6ECF5; --text:#0B1730; --text-2:#3B4B66; --text-3:#6B7A94; --blue:#1D4ED8;
+    --radius:18px; --font:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic','Pretendard',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;font-family:var(--font);background:var(--navy);color:var(--ink);-webkit-font-smoothing:antialiased;overflow:hidden}
+  body.join{background:var(--paper);color:var(--text);overflow:auto}
+  h1,h2,h3{margin:0;text-wrap:balance;line-height:1.15}
+  button{font-family:inherit}
+  .num{font-variant-numeric:tabular-nums}
+  a{color:inherit}
+
+  /* ===== presenter ===== */
+  #stage{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr auto}
+  .chrome{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;font-size:14px;color:var(--ink-3);gap:16px}
+  .chrome b{color:var(--ink-2);font-weight:700}
+  .chrome .clock{display:flex;gap:18px;align-items:center}
+  .chrome .clock .over{color:var(--coral)}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:var(--navy-2);color:var(--ink-2);font-size:12px;font-weight:700;letter-spacing:.04em}
+  .pill.demo{background:#5A3A00;color:var(--amber-2)}
+  .pill.live{background:#0E3B2C;color:var(--green)}
+  .pill.off{background:#4A1F1F;color:#FFB3B3}
+  .pill.manual{background:#2B2F5A;color:#C9CDFF}
+  .slide{padding:0 72px 24px;display:flex;flex-direction:column;justify-content:center;min-height:0;overflow:auto}
+  .slide.finale{justify-content:flex-start;padding-top:8px}
+  .slide.finale h2{font-size:clamp(24px,3.1vw,42px)}
+  .slide .eyebrow{font-size:16px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);font-weight:700;margin-bottom:18px}
+  .slide h1{font-size:clamp(40px,6vw,84px);font-weight:900}
+  .slide h2{font-size:clamp(30px,4.2vw,58px);font-weight:900}
+  .slide .lead{font-size:clamp(20px,2.2vw,30px);color:var(--ink-2);margin-top:22px;max-width:62ch;line-height:1.45}
+  .slide .sub{font-size:clamp(16px,1.6vw,22px);color:var(--ink-3);margin-top:14px;line-height:1.5}
+  .cols{display:grid;gap:26px;margin-top:34px}
+  .cols.c3{grid-template-columns:repeat(3,1fr)}
+  .cols.c2{grid-template-columns:repeat(2,1fr)}
+  .cols.c5{grid-template-columns:repeat(5,1fr)}
+  .card{background:var(--navy-2);border-radius:var(--radius);padding:26px 28px;min-height:0}
+  .card .k{font-size:14px;letter-spacing:.12em;color:var(--amber);font-weight:700;text-transform:uppercase}
+  .card .t{font-size:clamp(20px,2vw,28px);font-weight:900;margin-top:8px;line-height:1.25}
+  .card .d{font-size:clamp(15px,1.45vw,20px);color:var(--ink-2);margin-top:12px;line-height:1.55}
+  .card .d ul{margin:0;padding-left:20px}
+  .card .d li{margin:4px 0}
+  .card.warm{background:#3A2A0F}
+  .card.warm .k{color:var(--amber-2)}
+  .card.cool{background:#0F2E3F}
+  .quote{font-size:clamp(22px,2.6vw,36px);font-weight:700;line-height:1.4;color:var(--amber-2);margin-top:28px;max-width:40ch}
+  .safety{margin-top:26px;font-size:clamp(14px,1.4vw,19px);color:#FFC9C9;display:flex;gap:10px;align-items:flex-start}
+  .safety::before{content:"!";flex:none;width:26px;height:26px;border-radius:50%;background:#7A2C2C;color:#FFD5D5;display:grid;place-items:center;font-weight:900}
+  .footer{display:flex;justify-content:space-between;align-items:center;padding:10px 28px 18px;font-size:13px;color:var(--ink-3)}
+  .footer .nav{display:flex;gap:8px}
+  .footer button,.iconbtn{background:var(--navy-2);color:var(--ink-2);border:0;border-radius:10px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer}
+  .footer button:hover,.iconbtn:hover{background:var(--navy-3)}
+  .footer button:focus-visible,.iconbtn:focus-visible,.scale button:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+  .kbd{font-family:ui-monospace,Menlo,Consolas,monospace;background:var(--navy-3);padding:1px 6px;border-radius:5px;color:var(--ink-2)}
+
+  /* QR slide */
+  .qrwrap{display:grid;grid-template-columns:minmax(300px,420px) 1fr;gap:56px;align-items:center;margin-top:30px}
+  .qrbox{background:#fff;border-radius:24px;padding:22px;display:grid;place-items:center;aspect-ratio:1/1;width:100%;max-width:420px}
+  .qrbox canvas{width:100%;height:auto;image-rendering:pixelated}
+  .qrurl{font-size:13px;color:var(--ink-3);margin-top:10px;word-break:break-all;max-width:420px}
+  .board{display:grid;gap:18px}
+  .stat{background:var(--navy-2);border-radius:var(--radius);padding:22px 26px}
+  .stat .l{font-size:15px;color:var(--ink-3);font-weight:700;letter-spacing:.06em}
+  .stat .v{font-size:clamp(44px,6vw,86px);font-weight:900;line-height:1.05;margin-top:6px}
+  .stat .v small{font-size:.38em;color:var(--ink-3);font-weight:700;margin-left:8px}
+  .stat .v.good{color:var(--green)}
+  .stat .v.amber{color:var(--amber)}
+  .stat .v.bad{color:var(--coral)}
+  .stat .m{font-size:15px;color:var(--ink-2);margin-top:8px}
+  .stat.row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:18px}
+  .stat.row .arrow{font-size:42px;color:var(--ink-3)}
+  .dist{display:grid;grid-template-columns:repeat(11,1fr);gap:6px;align-items:end;height:110px;margin-top:8px}
+  .dist .bar{background:var(--navy-3);border-radius:6px 6px 2px 2px;position:relative;min-height:3px}
+  .dist .bar.hot{background:var(--amber)}
+  .dist .bar span{position:absolute;bottom:100%;left:0;right:0;text-align:center;font-size:12px;color:var(--ink-2);padding-bottom:3px}
+  .dist .bar i{position:absolute;top:100%;left:0;right:0;text-align:center;font-size:12px;color:var(--ink-3);font-style:normal;padding-top:4px}
+  .waiting{font-size:clamp(18px,2vw,26px);color:var(--ink-3)}
+
+  /* finale */
+  .finale-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:34px;margin-top:26px;align-items:start}
+  .big{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+  .big .stat{padding:16px 22px}
+  .big .stat .v{font-size:clamp(40px,4.6vw,68px)}
+  .finale-grid .barrow{margin-top:6px}
+  table.parts{width:100%;border-collapse:collapse;font-size:clamp(14px,1.45vw,20px);margin-top:4px}
+  table.parts th,table.parts td{padding:10px 12px;text-align:right;border-bottom:1px solid var(--navy-3)}
+  table.parts th{color:var(--ink-3);font-weight:700;font-size:.85em;letter-spacing:.06em}
+  table.parts td:first-child,table.parts th:first-child{text-align:left;font-weight:700}
+  table.parts .good{color:var(--green);font-weight:900}
+  .barrow{display:grid;grid-template-columns:130px 1fr 70px;gap:12px;align-items:center;margin-top:10px;font-size:clamp(14px,1.4vw,19px)}
+  .barrow .track{height:22px;background:var(--navy-3);border-radius:8px;overflow:hidden}
+  .barrow .fill{height:100%;background:var(--green);width:0;transition:width 1.2s cubic-bezier(.2,.8,.2,1)}
+  .barrow .fill.same{background:var(--slate)}
+  .barrow .fill.bad{background:var(--coral)}
+  .disclaimer{margin-top:22px;font-size:14px;color:var(--ink-3);line-height:1.5;max-width:90ch}
+  .reveal{display:grid;place-items:center;min-height:40vh}
+  .reveal button{font-size:clamp(22px,2.6vw,36px);font-weight:900;padding:24px 56px;border-radius:999px;border:0;background:var(--amber);color:var(--navy);cursor:pointer;box-shadow:0 20px 60px rgba(245,177,61,.25)}
+  .reveal button:hover{background:var(--amber-2)}
+
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(5,10,24,.78);display:grid;place-items:center;z-index:50;padding:24px}
+  .panel{background:var(--navy-2);border-radius:22px;padding:28px 30px;width:min(880px,96vw);max-height:92vh;overflow:auto;color:var(--ink)}
+  .panel h3{font-size:22px;font-weight:900;margin-bottom:16px}
+  .panel label{display:block;font-size:13px;color:var(--ink-3);font-weight:700;margin:14px 0 6px;letter-spacing:.04em}
+  .panel input[type=text],.panel input[type=url],.panel input[type=number],.panel textarea{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--navy-3);background:var(--navy);color:var(--ink);font-size:15px;font-family:inherit}
+  .panel textarea{min-height:140px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px}
+  .panel .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:18px}
+  .panel .row button{background:var(--amber);color:var(--navy);border:0;border-radius:10px;padding:10px 16px;font-weight:900;cursor:pointer}
+  .panel .row button.ghost{background:var(--navy-3);color:var(--ink-2)}
+  .panel .hint{font-size:13px;color:var(--ink-3);line-height:1.55;margin-top:8px}
+  .panel .ok{color:var(--green);font-weight:700}
+  .panel .err{color:var(--coral);font-weight:700}
+  .panel table{width:100%;border-collapse:collapse;font-size:14px}
+  .panel table th,.panel table td{padding:8px 10px;border-bottom:1px solid var(--navy-3);text-align:right}
+  .panel table th:first-child,.panel table td:first-child{text-align:left}
+  .notes{position:fixed;right:24px;bottom:70px;width:min(520px,44vw);background:rgba(19,36,70,.96);border-radius:16px;padding:18px 20px;font-size:15px;line-height:1.6;color:var(--ink-2);z-index:40;box-shadow:0 20px 60px rgba(0,0,0,.4);max-height:60vh;overflow:auto}
+  .notes h4{margin:0 0 8px;font-size:13px;letter-spacing:.1em;color:var(--amber)}
+  .toast{position:fixed;left:50%;bottom:78px;transform:translateX(-50%);background:var(--amber);color:var(--navy);padding:10px 18px;border-radius:999px;font-weight:900;font-size:14px;z-index:60;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  .manual-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+  .manual-grid label{margin:0 0 6px}
+
+  /* ===== participant (join) ===== */
+  .join-wrap{max-width:520px;margin:0 auto;padding:22px 18px 60px}
+  .join-head{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--text-3);font-weight:700;letter-spacing:.04em}
+  .join-card{background:var(--paper-2);border-radius:22px;padding:24px 20px;margin-top:16px;box-shadow:0 10px 40px rgba(11,23,48,.08)}
+  .join-card .phase{display:inline-block;padding:5px 12px;border-radius:999px;font-size:13px;font-weight:900;letter-spacing:.06em}
+  .join-card .phase.pre{background:#E8EFFF;color:var(--blue)}
+  .join-card .phase.post{background:#E6F8EF;color:#0B7A47}
+  .join-card h1{font-size:30px;font-weight:900;margin-top:12px}
+  .join-card .q{font-size:17px;color:var(--text-2);margin-top:10px;line-height:1.5}
+  .scale{display:grid;grid-template-columns:repeat(11,1fr);gap:5px;margin-top:20px}
+  .scale button{aspect-ratio:1/1.35;min-width:0;border-radius:9px;border:2px solid var(--paper-3);background:#fff;font-size:15px;font-weight:900;color:var(--text);cursor:pointer;padding:0;letter-spacing:-.04em}
+  .scale button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .scale .ends{grid-column:1/-1;display:flex;justify-content:space-between;font-size:12px;color:var(--text-3);font-weight:700}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .chips button{border:2px solid var(--paper-3);background:#fff;border-radius:999px;padding:9px 14px;font-size:14px;font-weight:700;color:var(--text-2);cursor:pointer}
+  .chips button.on{background:var(--blue);border-color:var(--blue);color:#fff}
+  .submit{width:100%;margin-top:22px;padding:18px;border-radius:14px;border:0;background:var(--navy);color:#fff;font-size:19px;font-weight:900;cursor:pointer}
+  .submit[disabled]{background:#B9C3D6;cursor:not-allowed}
+  .fine{font-size:12.5px;color:var(--text-3);margin-top:14px;line-height:1.55}
+  .done{text-align:center;padding:14px 0 4px}
+  .done .check{width:72px;height:72px;border-radius:50%;background:#E6F8EF;color:#0B7A47;display:grid;place-items:center;font-size:36px;font-weight:900;margin:0 auto 12px}
+  .done h2{font-size:26px;font-weight:900}
+  .done .mine{margin-top:16px;background:var(--paper);border-radius:14px;padding:14px;font-size:16px;color:var(--text-2)}
+  .done .mine b{font-size:22px;color:var(--text)}
+  .group{margin-top:16px;border-top:1px dashed var(--paper-3);padding-top:14px}
+  .group .l{font-size:13px;color:var(--text-3);font-weight:700;letter-spacing:.06em}
+  .group .v{font-size:34px;font-weight:900;color:var(--navy);margin-top:4px}
+  .group .v.good{color:#0B7A47}
+  .group .m{font-size:13px;color:var(--text-3);margin-top:4px}
+  .join-error{background:#FFF0F0;color:#8A1F1F;border-radius:14px;padding:16px;font-weight:700;line-height:1.5}
+
+  @media (max-width:900px){
+    .slide{padding:0 28px 16px}
+    .cols.c3,.cols.c5,.cols.c2{grid-template-columns:1fr}
+    .qrwrap{grid-template-columns:1fr}
+    .finale-grid{grid-template-columns:1fr}
+  }
+  @media (prefers-reduced-motion:reduce){ .barrow .fill{transition:none} }
+</style>
+
+<div id="app"></div>
+
+<script>/*__QR_BUNDLE__*/</script>
+<script>
+/* ============================================================
+   JIN.AI 라이브 리셋 — 발표 화면 + 참가자 화면 (단일 파일)
+   모드: 기본 = 발표자 / ?mode=join&s=세션&p=부위&t=pre|post = 참가자
+   ============================================================ */
+(function(){
+'use strict';
+
+const PARTS=[
+  {id:'foot',name:'발·발목',short:'발',icon:'①',
+   check:'제자리에서 가볍게 3번 뛰거나 3걸음 걷기. 발바닥 느낌과 무게를 기억합니다.',
+   reset:['의자에 앉아 한쪽 발만: 뒤꿈치는 바닥, 발 아치 중앙에 공','굴리지 않고 누른 채 5초 내쉬기 ×5 (옆사람에게 숨소리가 들리게)','누른 채 엄지↑네 발가락↓ 교대 ×10'],
+   compare:'안 푼 발 vs 푼 발로 제자리 가볍게 뛰기. 어느 발이 가볍고 탄력이 있습니까?',
+   slogan:'발은 1층입니다. 1층이 무너지면 위층이 다 무너집니다.',
+   keep:'걸을 때 뒤꿈치 바깥 → 앞꿈치. 95%는 딴생각, 5%만 발바닥에.',
+   safety:'최근 발목을 삐었거나 발바닥이 붓고 뜨거우면 압박은 생략하고 걷기만 합니다. 균형이 불안하면 의자를 잡습니다.',
+   note:'[5분] 첫 부위는 가장 안전하고 체감이 큰 발부터. 공은 굴리지 말고 "누르고 내쉬기". 숨소리가 안 들리면 "벌금 1만 원" 유머. 한쪽만 풀고 뛰기 비교 → 바로 사후 QR로.'},
+  {id:'neck',name:'목',short:'목',icon:'②',
+   check:'정면에서 좌우로 편안한 범위까지 회전. 더 답답한 쪽을 기억합니다.',
+   reset:['범인은 등: 의자 등받이에 등 위쪽을 붙이고 배를 살짝 조여 등 세우기, 5초 내쉬기 ×3','뒤통수 아래 움푹한 곳(양쪽)에 엄지, 1초에 1cm 속도로 좌우 비교, 5초 내쉬기 ×3','대화할 때 고개 끄덕임 습관을 알아차리기 (경청 70%, 나에게 30%)'],
+   compare:'같은 속도로 다시 회전. 각도보다 "덜 걸리는 느낌"을 확인합니다.',
+   slogan:'목은 피해자, 범인은 등입니다. 피해자만 주무르지 마세요.',
+   keep:'화면 위쪽을 눈높이 근처로. 30분마다 등을 한 번 세웁니다.',
+   safety:'팔 저림·손 힘 빠짐이 있으면 압박은 생략하고 등 세우기만. 목을 뒤로 꺾지 않습니다.',
+   note:'[5분] "고개 끄덕이면 벌금" 게임은 웃음이 나되, "관계도 중요하니 70:30"으로 착지. 저림 호소자는 즉석 진단 금지 → "지속되면 의료기관 평가"로 안내.'},
+  {id:'shoulder',name:'어깨',short:'어깨',icon:'③',
+   check:'양팔 만세. 걸리는 높이와 어느 팔이 무거운지 기억합니다.',
+   reset:['한쪽만: 목과 어깨의 모서리(승모근 위)를 등받이와 등 사이 공으로 받치고 팔 만세 ×3, 내쉬며','겨드랑이 아래 옆구리(광배근)에 공을 손으로 대고 5초 내쉬기 ×3','미간의 힘 빼기 — 인상 쓰면 근육도 같이 조입니다'],
+   compare:'안 푼 팔 만세 vs 푼 팔 만세. 팔 무게가 다릅니까?',
+   slogan:'통증은 근육의 집 주소입니다. 아프면 "심봤다".',
+   keep:'팔이 가벼우면 스포츠카를 얻은 것. 주차장에 두지 말고 쓰세요.',
+   safety:'어깨 급성 통증·탈구 이력이 있으면 만세 대신 앞으로 들기까지만.',
+   note:'[5분] 가장 큰 와우 구간. 반드시 한쪽만 풀고 "안 푼 팔 vs 푼 팔" 비교. "80% 뺀 것 같죠? 5% 뺐습니다" 유머. 압박 강도는 "시원한 불편감"까지라고 명시.'},
+  {id:'back',name:'허리',short:'허리',icon:'④',
+   check:'앉은 채 몸통을 조금 숙여 허리 느낌, 또는 일어나 3걸음 걷기.',
+   reset:['한쪽만: 의자 위 청바지 뒷주머니 위치에 공, 그쪽 무릎을 바깥으로 벌리며 체중 싣기','힘을 완전히 빼고 10초 내쉬기 ×2, 공을 2cm 옆으로 옮겨 반복','골반을 앞뒤로 작게 5번 움직여 가장 편한 중간점에서 호흡 3회'],
+   compare:'안 푼 다리 vs 푼 다리 들어 올리기. 일어나서 3걸음 — 허리 느낌은?',
+   slogan:'엉덩이는 방석이 아닙니다. 허리는 피해자, 범인은 엉덩이.',
+   keep:'앉을 때 허리를 넣고 배를 조여 등을 세웁니다. 30분마다 자세를 바꿉니다.',
+   safety:'다리로 뻗치는 통증·저림이 있으면 공은 생략하고 골반 흔들기만 합니다.',
+   note:'[5분] "10초만 아프고 허리와 헤어질지, 계속 아플지 선택하세요"는 강하지만 "즉시 없어진다" 단정은 피하고 "달라지는지 확인합니다"로.'},
+  {id:'knee',name:'무릎',short:'무릎',icon:'⑤',
+   check:'의자에서 천천히 일어나기 1회. 무릎 방향과 불편한 지점을 기억합니다.',
+   reset:['한쪽만: 앉아서 허벅지 앞 중앙을 공이나 손바닥으로 누른 채 무릎 구부렸다 폈다 ×10, 내쉬며 (동적 이완)','발 3점(뒤꿈치·엄지 아래·새끼 아래)을 바닥에, 무릎은 둘째 발가락 방향','무릎을 잠그지 말고 2%만 구부린 채 엉덩이를 접어 일어나기 ×3'],
+   compare:'안 푼 다리 vs 푼 다리 들기. 같은 속도로 한 번 더 일어나 비교합니다.',
+   slogan:'무릎은 2층입니다. 1층(발)과 3층(엉덩이)이 무릎을 결정합니다.',
+   keep:'서 있을 때 무릎 2% 구부리기 — 엘리베이터와 신호등에서 연습.',
+   safety:'수술 직후·부종·열감이 있으면 압박은 생략하고 일어나기만 합니다.',
+   note:'[5분] 강사 본인의 연골 이식 수술 스토리를 여기서 짧게(30초). "저에게 통했다고 모두에게 같다고 말하지 않겠습니다. 그래서 여러분이 직접 측정합니다."'},
+];
+const PART_BY={}; PARTS.forEach(p=>PART_BY[p.id]=p);
+const FEEL=['통증이 사라짐','훨씬 가벼워짐','조금 부드러워짐','변화 없음','더 불편해짐'];
+const AGES=['20대','30대','40대','50대 이상'];
+
+/* ---------- utils ---------- */
+const $=(s,r)=>(r||document).querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt1=n=>(Math.round(n*10)/10).toFixed(1);
+const pct=(a,b)=>b?Math.round(a/b*100):0;
+function store(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k));localStorage.setItem(k,JSON.stringify(v));}catch(e){return null;}}
+function randId(n){const a='abcdefghjkmnpqrstuvwxyz23456789';let s='';const c=new Uint8Array(n);(window.crypto&&crypto.getRandomValues)?crypto.getRandomValues(c):c.forEach((_,i)=>c[i]=Math.floor(Math.random()*256));for(let i=0;i<n;i++)s+=a[c[i]%a.length];return s;}
+function qs(){const o={};new URLSearchParams(location.search).forEach((v,k)=>o[k]=v);return o;}
+function drawQR(canvas,text){
+  const q=window.QRCodeGen(text,'M'),n=q.getModuleCount(),cell=8,quiet=4,size=(n+quiet*2)*cell;
+  canvas.width=size;canvas.height=size;const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,size,size);ctx.fillStyle='#0B1730';
+  for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(q.isDark(r,c))ctx.fillRect((c+quiet)*cell,(r+quiet)*cell,cell,cell);
+}
+
+/* ---------- config ---------- */
+const DEFAULTS={session:'suwon-2',title:'수원가정법원 2회차',backend:'',joinBase:'',reviewUrl:'',minN:5,demo:!!window.DEMO_DEFAULT,brand:'JIN.AI 스포츠의학연구소',program:'JINMETA · LIVE BODY RESET',contact:'super-skungk@hanmail.net',showContact:true};
+let cfg=Object.assign({},DEFAULTS,store('jr.cfg')||{});
+if(window.DEMO_DEFAULT&&!cfg.backend)cfg.demo=true;
+function saveCfg(){store('jr.cfg',cfg);}
+function joinBase(){if(cfg.joinBase)return cfg.joinBase;return location.origin+location.pathname;}
+function joinUrl(part,phase){const b=joinBase();return b+(b.includes('?')?'&':'?')+'mode=join&s='+encodeURIComponent(cfg.session)+'&p='+part+'&t='+phase;}
+
+/* ---------- backend ---------- */
+const api={
+  async rows(session){
+    if(cfg.demo)return demo.rows();
+    if(!cfg.backend)throw new Error('no-backend');
+    const r=await fetch(cfg.backend+(cfg.backend.includes('?')?'&':'?')+'action=rows&session='+encodeURIComponent(session)+'&_='+Date.now(),{cache:'no-store'});
+    const j=await r.json();if(!j.ok)throw new Error(j.error||'rows failed');return j.rows||[];
+  },
+  async submit(d){
+    if(cfg.demo){demo.add(d);return {ok:true};}
+    if(!cfg.backend)throw new Error('no-backend');
+    const body=JSON.stringify(d);
+    try{const r=await fetch(cfg.backend,{method:'POST',body});const j=await r.json();if(!j.ok)throw new Error(j.error||'submit failed');return j;}
+    catch(e){await fetch(cfg.backend,{method:'POST',body,mode:'no-cors'});return {ok:true,opaque:true};}
+  },
+  async ping(){
+    if(cfg.demo)return {ok:true,demo:true};
+    const r=await fetch(cfg.backend+(cfg.backend.includes('?')?'&':'?')+'action=ping&_='+Date.now(),{cache:'no-store'});return r.json();
+  }
+};
+
+/* ---------- demo data (가상, 화면에 항상 표시) ---------- */
+const demo=(function(){
+  let seed=20260903;const rnd=()=>{seed=(seed*1103515245+12345)&0x7fffffff;return seed/0x7fffffff;};
+  const rows=[];const N=38;
+  const base={foot:4.2,neck:5.6,shoulder:5.9,back:5.1,knee:3.8};
+  for(let i=0;i<N;i++){const token='demo'+i;PARTS.forEach(p=>{
+    const pre=Math.max(0,Math.min(10,Math.round(base[p.id]+(rnd()-0.5)*5)));
+    rows.push({token,part:p.id,phase:'pre',score:pre,extra:{}});
+    if(rnd()<0.86){const drop=pre===0?0:Math.max(-1,Math.min(pre,Math.round(rnd()*4-0.9)));rows.push({token,part:p.id,phase:'post',score:Math.max(0,Math.min(10,pre-drop)),extra:{}});}
+  });}
+  return {rows:()=>rows.slice(),add:d=>rows.push(Object.assign({},d))};
+})();
+
+/* ---------- stats ---------- */
+function computeStats(rows,manual){
+  const latest={};rows.forEach(r=>{if(!PART_BY[r.part]||(r.phase!=='pre'&&r.phase!=='post'))return;const s=Number(r.score);if(!(s>=0&&s<=10))return;latest[r.token+'|'+r.part+'|'+r.phase]=s;});
+  const tokens=new Set();Object.keys(latest).forEach(k=>tokens.add(k.split('|')[0]));
+  const parts={};let allPairs=[];const personPairs={};
+  PARTS.forEach(p=>{
+    const pre=[],post=[],pairs=[];const dist=Array(11).fill(0),distPost=Array(11).fill(0);
+    tokens.forEach(t=>{const a=latest[t+'|'+p.id+'|pre'],b=latest[t+'|'+p.id+'|post'];
+      if(a!==undefined){pre.push(a);dist[a]++;}if(b!==undefined){post.push(b);distPost[b]++;}
+      if(a!==undefined&&b!==undefined){pairs.push(a-b);(personPairs[t]=personPairs[t]||[]).push(a-b);}});
+    let src='live';
+    if(pairs.length===0&&manual&&manual[p.id]){const m=manual[p.id];src='manual';
+      for(let i=0;i<(m.same||0);i++)pairs.push(0);for(let i=0;i<(m.d1||0);i++)pairs.push(1);for(let i=0;i<(m.d2||0);i++)pairs.push(2);for(let i=0;i<(m.d3||0);i++)pairs.push(3);for(let i=0;i<(m.worse||0);i++)pairs.push(-1);}
+    const mean=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+    const imp1=pairs.filter(d=>d>=1).length,imp2=pairs.filter(d=>d>=2).length,same=pairs.filter(d=>d===0).length,worse=pairs.filter(d=>d<0).length;
+    parts[p.id]={nPre:pre.length,nPost:post.length,meanPre:mean(pre),meanPost:mean(post),dist,distPost,nPairs:pairs.length,meanDrop:mean(pairs),imp1,imp2,same,worse,src};
+    allPairs=allPairs.concat(pairs);
+  });
+  const persons=Object.keys(personPairs);const personsImproved=persons.filter(t=>personPairs[t].some(d=>d>=1)).length;
+  const mean=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+  return {parts,participants:tokens.size,nPairs:allPairs.length,meanDrop:mean(allPairs),imp1:allPairs.filter(d=>d>=1).length,imp2:allPairs.filter(d=>d>=2).length,same:allPairs.filter(d=>d===0).length,worse:allPairs.filter(d=>d<0).length,persons:persons.length,personsImproved,dropDist:{0:allPairs.filter(d=>d<=0).length,1:allPairs.filter(d=>d===1).length,2:allPairs.filter(d=>d===2).length,3:allPairs.filter(d=>d>=3).length}};
+}
+
+/* ============================================================
+   PARTICIPANT
+   ============================================================ */
+function runJoin(q){
+  document.body.classList.add('join');
+  const app=$('#app');
+  const session=String(q.s||'').slice(0,64),part=PART_BY[q.p],phase=q.t==='post'?'post':(q.t==='pre'?'pre':null);
+  cfg.session=session||cfg.session;
+  if(!part||!phase||!session){app.innerHTML='<div class="join-wrap"><div class="join-card"><div class="join-error">잘못된 QR입니다. 화면의 QR을 다시 찍어 주세요.<br><small>(부위·시점·세션 정보가 없습니다)</small></div></div></div>';return;}
+  let token=store('jr.token');if(!token){token=randId(12);store('jr.token',token);}
+  const myKey='jr.my.'+session;const my=store(myKey)||{};
+  let score=null,feel=null,age=null,disturb=null;
+  const already=my[part.id]&&my[part.id][phase]!==undefined;
+  function render(){
+    app.innerHTML=`<div class="join-wrap">
+      <div class="join-head"><span>${esc(cfg.brand)}</span><span>${esc(cfg.title||session)}</span></div>
+      <div class="join-card">
+        <span class="phase ${phase}">${phase==='pre'?'강의 전 · BEFORE':'실습 후 · AFTER'}</span>
+        <h1>${esc(part.name)} ${phase==='pre'?'지금 불편감은?':'지금은 몇 점입니까?'}</h1>
+        <div class="q">${phase==='pre'?'0점 = 전혀 불편하지 않음, 10점 = 매우 심하게 불편함. 지금 느낌 그대로 고르세요.':'좋아졌으면 좋아진 만큼, 같으면 같게, 더 불편하면 높게. 솔직한 숫자가 이 강의장의 데이터가 됩니다.'}</div>
+        ${already?`<div class="fine" style="color:#0B7A47;font-weight:700">이미 제출했습니다 (${my[part.id][phase]}점). 다시 고르면 마지막 값으로 바뀝니다.</div>`:''}
+        <div class="scale" id="scale">${Array.from({length:11},(_,i)=>`<button type="button" data-v="${i}" class="${score===i?'on':''}">${i}</button>`).join('')}<div class="ends"><span>0 전혀 없음</span><span>10 매우 심함</span></div></div>
+        ${phase==='pre'?`<div class="q" style="margin-top:22px">이 불편감이 평소 업무 집중을 방해합니까? <small style="color:var(--text-3)">(선택)</small></div><div class="chips" id="disturb">${[1,2,3,4,5].map(i=>`<button type="button" data-v="${i}" class="${disturb===i?'on':''}">${i}${i===1?' 전혀':i===5?' 매우':''}</button>`).join('')}</div>
+        <div class="q" style="margin-top:18px">연령대 <small style="color:var(--text-3)">(선택)</small></div><div class="chips" id="age">${AGES.map(a=>`<button type="button" data-v="${esc(a)}" class="${age===a?'on':''}">${esc(a)}</button>`).join('')}</div>`
+        :`<div class="q" style="margin-top:22px">몸의 느낌은 어떻게 변했습니까? <small style="color:var(--text-3)">(선택)</small></div><div class="chips" id="feel">${FEEL.map(f=>`<button type="button" data-v="${esc(f)}" class="${feel===f?'on':''}">${esc(f)}</button>`).join('')}</div>`}
+        <button class="submit" id="submit" ${score===null?'disabled':''}>제출</button>
+        <div class="fine">익명 자기평가입니다. 이름·연락처·소속을 받지 않으며, 개인 결과는 기관에 전달되지 않습니다. 이 휴대폰의 무작위 번호로만 강의 전·후를 짝지어 집계합니다. 날카로운 통증·저림·어지럼이 있으면 실습을 중단하세요.</div>
+      </div></div>`;
+    $('#scale').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;score=Number(b.dataset.v);render();});
+    ['disturb','age','feel'].forEach(id=>{const el=$('#'+id);if(!el)return;el.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const v=b.dataset.v;if(id==='disturb')disturb=disturb===Number(v)?null:Number(v);if(id==='age')age=age===v?null:v;if(id==='feel')feel=feel===v?null:v;render();});});
+    $('#submit').addEventListener('click',submit);
+  }
+  async function submit(){
+    const btn=$('#submit');btn.disabled=true;btn.textContent='보내는 중…';
+    const extra={};if(disturb)extra.disturb=disturb;if(age)extra.age=age;if(feel)extra.feel=feel;
+    try{await api.submit({session,token,part:part.id,phase,score,extra});
+      my[part.id]=my[part.id]||{};my[part.id][phase]=score;store(myKey,my);renderDone();}
+    catch(e){btn.disabled=false;btn.textContent='다시 시도';const f=document.createElement('div');f.className='join-error';f.style.marginTop='12px';f.textContent='전송에 실패했습니다. 와이파이·데이터 연결을 확인하고 다시 눌러 주세요.';btn.after(f);}
+  }
+  async function renderDone(){
+    const pre=my[part.id]&&my[part.id].pre,post=my[part.id]&&my[part.id].post;
+    let mine='';
+    if(phase==='post'&&pre!==undefined){const d=pre-post;mine=`<div class="mine">${esc(part.name)} 강의 전 <b>${pre}점</b> → 지금 <b>${post}점</b><br>${d>0?`<b style="color:#0B7A47">${d}점 감소</b>`:d===0?'변화 없음 — 범위·속도·부위를 다시 관찰해 보세요':`<b style="color:#B42318">${-d}점 증가</b> — 실습을 중단하고 무리하지 마세요`}</div>`;}
+    else mine=`<div class="mine">${esc(part.name)} ${phase==='pre'?'강의 전':'실습 후'} <b>${score}점</b> 기록됨</div>`;
+    app.innerHTML=`<div class="join-wrap"><div class="join-head"><span>${esc(cfg.brand)}</span><span>${esc(cfg.title||session)}</span></div>
+      <div class="join-card"><div class="done"><div class="check">✓</div><h2>제출 완료</h2><div class="q">휴대폰을 내려놓고 화면을 봐 주세요.</div>${mine}
+      <div class="group" id="group"><div class="l">이 강의장 전체 · 실시간</div><div class="v">집계 중…</div></div>
+      <div class="fine">교육 직후 익명 자기보고 집계이며 대조군이 없습니다. 의학적 진단이나 치료 효과를 의미하지 않습니다.${phase==='post'?' 변화가 없거나 악화되면 무리하지 말고 전문가와 상담하세요.':''}</div></div></div></div>`;
+    try{const st=computeStats(await api.rows(session)),ps=st.parts[part.id];const g=$('#group');
+      if(phase==='pre'||ps.nPairs===0)g.innerHTML=`<div class="l">이 강의장 전체 · ${esc(part.name)} 강의 전</div><div class="v">${ps.nPre?fmt1(ps.meanPre)+'점':'—'}</div><div class="m">응답 ${ps.nPre}명 평균</div>`;
+      else g.innerHTML=`<div class="l">이 강의장 전체 · ${esc(part.name)}</div><div class="v good">평균 ${fmt1(ps.meanDrop)}점 감소</div><div class="m">${fmt1(ps.meanPre)} → ${fmt1(ps.meanPost)}점 · 전후 응답 ${ps.nPairs}명 중 ${pct(ps.imp1,ps.nPairs)}% 개선</div>`;
+    }catch(e){const g=$('#group');if(g)g.innerHTML='<div class="l">이 강의장 전체</div><div class="m">집계를 불러오지 못했습니다. 화면을 봐 주세요.</div>';}
+  }
+  render();
+}
+
+/* ============================================================
+   PRESENTER
+   ============================================================ */
+function buildSlides(){
+  const s=[];
+  s.push({type:'title',min:1});
+  s.push({type:'story',min:1.5});
+  s.push({type:'promise',min:1.5});
+  s.push({type:'method',min:1});
+  PARTS.forEach(p=>{s.push({type:'qr',part:p.id,phase:'pre',min:1.5});s.push({type:'practice',part:p.id,min:5});s.push({type:'qr',part:p.id,phase:'post',min:1.5});});
+  s.push({type:'life',min:2});
+  s.push({type:'finale',min:2});
+  s.push({type:'close',min:1});
+  let acc=0;s.forEach(x=>{acc+=x.min;x.cum=acc;});
+  return s;
+}
+const SLIDES=buildSlides();
+let idx=Math.max(0,Math.min(SLIDES.length-1,Number(store('jr.idx.'+cfg.session))||0));
+let startedAt=store('jr.start.'+cfg.session)||null;
+let rows=[],stats=computeStats([],null),lastFetch=null,fetchErr=null,pollTimer=null,revealed=false,notesOn=false,toastTimer=null;
+function manual(){return store('jr.manual.'+cfg.session)||{};}
+
+function chromeStatus(){
+  if(cfg.demo)return '<span class="pill demo">데모 데이터 (가상)</span>';
+  if(!cfg.backend)return '<span class="pill off">백엔드 미설정 · S 키</span>';
+  if(fetchErr)return '<span class="pill off">수집 서버 연결 실패</span>';
+  return '<span class="pill live">LIVE'+(lastFetch?' · '+lastFetch:'')+'</span>';
+}
+function clockHtml(){
+  const sl=SLIDES[idx];const el=startedAt?Math.floor((Date.now()-startedAt)/1000):0;
+  const mm=String(Math.floor(el/60)).padStart(2,'0'),ss=String(el%60).padStart(2,'0');
+  const over=startedAt&&el>sl.cum*60;
+  return `<span class="num ${over?'over':''}">경과 ${mm}:${ss}</span><span class="num" style="color:var(--ink-3)">목표 ${Math.floor(sl.cum)}:${String(Math.round((sl.cum%1)*60)).padStart(2,'0')}</span><span class="num">${idx+1} / ${SLIDES.length}</span>`;
+}
+
+const R={
+  title(){return `<div class="eyebrow">법원·공공기관 웰니스 실전강의 · 50분</div><h1>몸은 바로<br>말합니다</h1><div class="lead">목·어깨·허리·무릎·발 — 다섯 부위를 <b style="color:var(--ink)">강의 전과 후 같은 기준</b>으로 직접 측정하고, 이 강의장의 변화를 마지막 화면에서 함께 확인합니다.</div><div class="sub">${esc(cfg.brand)} · 스포츠의학 박사 김진 · ${esc(cfg.title||cfg.session)}</div>`;},
+  story(){return `<div class="eyebrow">왜 제가 이 강의를 합니까</div><h2>스노보드 착지 한 번에 무릎 연골이 파열됐고,<br>수술 후에도 절뚝였습니다</h2><div class="cols c3"><div class="card"><div class="k">그때</div><div class="t">연골 이식 수술, 3~4년의 불편</div><div class="d">재활도 수술도 예전 무릎을 돌려주지 않았습니다. 그래서 "왜 아픈가"를 몸으로 파고들었습니다.</div></div><div class="card"><div class="k">지금</div><div class="t">42km 마라톤 완주, 20년 임상</div><div class="d">경희대 스포츠의학 박사 · 교정운동학 역자 · 15년간 트레이너 교육. 다치지 않은 사람보다 잘 움직이게 됐습니다.</div></div><div class="card warm"><div class="k">오늘의 약속</div><div class="t">저에게 통했다고 모두에게 같다고 말하지 않겠습니다</div><div class="d">그래서 오늘은 제가 효과를 선언하지 않고, 여러분이 직접 측정합니다.</div></div></div>`;},
+  promise(){return `<div class="eyebrow">오늘의 약속 · 안전 3원칙</div><h2>목표는 통증을 지우는 것이 아니라,<br>변화를 확인하고 유지법을 가져가는 것입니다</h2><div class="cols c3"><div class="card"><div class="k">01 멈춤</div><div class="t">날카로운 통증·저림·어지럼·힘 빠짐</div><div class="d">생기면 즉시 중단. 관찰만 해도 충분합니다.</div></div><div class="card"><div class="k">02 작게</div><div class="t">압박은 "시원한 불편감"까지</div><div class="d">비명이 나오는 강도는 오답입니다. 숨을 참지 않습니다.</div></div><div class="card"><div class="k">03 선택</div><div class="t">수술 직후·급성 손상·불안정성</div><div class="d">따라 하지 않고 보기만 하셔도 됩니다. 오늘은 겨루는 시간이 아닙니다.</div></div></div><div class="disclaimer">오늘의 즉시 변화는 교육 직후의 현장 체험 결과이며, 의학적 진단이나 치료 효과를 의미하지 않습니다. 이름·연락처·소속은 받지 않습니다.</div>`;},
+  method(){return `<div class="eyebrow">진행 방식 · 10초 메타인지</div><h2>다섯 부위 모두 같은 순서로 갑니다</h2><div class="cols c5"><div class="card"><div class="k">1 사전 QR</div><div class="t">지금 불편감 0~10</div><div class="d">휴대폰으로 찍고 숫자 하나. 20초.</div></div><div class="card"><div class="k">2 체크</div><div class="t">움직여 보고 기억</div><div class="d">어느 쪽이 더 걸리고 무거운가.</div></div><div class="card cool"><div class="k">3 10초 리셋</div><div class="t">누르고 · 내쉬고 · 힘 빼기</div><div class="d">한쪽만 합니다. 내쉬는 숨소리가 옆사람에게 들려야 합니다.</div></div><div class="card"><div class="k">4 비교</div><div class="t">안 푼 쪽 vs 푼 쪽</div><div class="d">가장 정확한 측정기는 여러분의 반대쪽입니다.</div></div><div class="card warm"><div class="k">5 사후 QR</div><div class="t">같은 부위, 같은 기준</div><div class="d">좋아졌으면 좋아진 만큼, 같으면 같게.</div></div></div><div class="quote">"생각이 많으면 감각이 사라지고, 감각이 깨어나면 생각이 사라집니다." — 오늘은 감각에 집중하는 50분입니다.</div>`;},
+  practice(sl){const p=PART_BY[sl.part];return `<div class="eyebrow">PART ${p.icon} · ${esc(p.name)} · 5분</div><h2>${esc(p.slogan)}</h2><div class="cols c3"><div class="card"><div class="k">체크</div><div class="d">${esc(p.check)}</div></div><div class="card cool"><div class="k">10초 리셋 · 한쪽만</div><div class="d"><ul>${p.reset.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div></div><div class="card warm"><div class="k">비교 · 와우</div><div class="d">${esc(p.compare)}</div><div class="d" style="margin-top:14px;color:var(--amber-2)"><b>유지:</b> ${esc(p.keep)}</div></div></div><div class="safety">${esc(p.safety)}</div>`;},
+  qr(sl){const p=PART_BY[sl.part],pre=sl.phase==='pre',url=joinUrl(p.id,sl.phase),ps=stats.parts[p.id];
+    let board='';
+    if(pre){board=`<div class="stat"><div class="l">응답</div><div class="v num">${ps.nPre}<small>명</small></div><div class="m">휴대폰으로 QR을 찍고 ${esc(p.name)} 불편감을 0~10으로 입력합니다</div></div>
+      <div class="stat"><div class="l">이 강의장 ${esc(p.name)} 강의 전 평균</div><div class="v num amber">${ps.nPre?fmt1(ps.meanPre):'—'}<small>/ 10</small></div><div class="dist">${ps.dist.map((c,i)=>`<div class="bar ${c===Math.max(...ps.dist)&&c>0?'hot':''}" style="height:${ps.nPre?Math.max(3,c/Math.max(...ps.dist)*100):3}%"><span>${c||''}</span><i>${i}</i></div>`).join('')}</div></div>`;}
+    else{const show=ps.nPairs>0;board=`<div class="stat row"><div><div class="l">강의 전</div><div class="v num">${ps.nPre?fmt1(ps.meanPre):'—'}</div></div><div class="arrow">→</div><div><div class="l">실습 후</div><div class="v num ${show?'good':''}">${ps.nPost?fmt1(ps.meanPost):'—'}</div></div><div class="m" style="grid-column:1/-1">사후 응답 ${ps.nPost}명 · 전후 짝 ${ps.nPairs}명${ps.src==='manual'?' · <span class="pill manual">수기 집계</span>':''}</div></div>
+      <div class="stat"><div class="l">${esc(p.name)} 불편감 감소 · 전체 평균</div><div class="v num ${show?'good':''}">${show?fmt1(ps.meanDrop)+'<small>점 감소</small>':'<span class="waiting">입력을 기다리는 중…</span>'}</div><div class="m">${show?`전후 응답 ${ps.nPairs}명 중 <b style="color:var(--green)">${pct(ps.imp1,ps.nPairs)}%</b> 개선 · 2점 이상 ${pct(ps.imp2,ps.nPairs)}% · 변화 없음 ${pct(ps.same,ps.nPairs)}% · 증가 ${pct(ps.worse,ps.nPairs)}%${ps.nPairs<cfg.minN?` · <span style="color:var(--amber)">N&lt;${cfg.minN} 참고용</span>`:''}`:'같은 부위, 같은 0~10 기준으로 다시 입력합니다'}</div></div>`;}
+    return `<div class="eyebrow">${pre?'LIVE CHECK · BEFORE':'LIVE CHECK · AFTER'} · ${esc(p.name)}</div><h2>${pre?`${esc(p.name)} — 지금 불편감은 몇 점입니까?`:`${esc(p.name)} — 지금은 몇 점입니까?`}</h2><div class="qrwrap"><div><div class="qrbox"><canvas id="qr"></canvas></div><div class="qrurl">${esc(url)}</div></div><div class="board">${board}</div></div>${pre?'':'<div class="sub">좋아졌으면 좋아진 만큼, 같으면 같게, 더 불편하면 높게 — 솔직한 숫자만 데이터가 됩니다.</div>'}`;},
+  life(){return `<div class="eyebrow">유지의 국영수 · 체육관 밖 23시간</div><h2>리셋은 몇 분, 생활은 하루 종일입니다</h2><div class="cols c3"><div class="card"><div class="k">국 · 바르게 서기</div><div class="t">서 있는 플랭크</div><div class="d"><ul><li>발가락 살짝 들기 → 바깥날로 아치 만들기 → 발 3점 내려놓기</li><li>무릎은 잠그지 말고 2%</li><li>엘리베이터·신호등이 연습 시간</li></ul></div></div><div class="card"><div class="k">영 · 바르게 걷기</div><div class="t">5%만 발바닥에</div><div class="d"><ul><li>뒤꿈치 바깥 → 앞꿈치로 밀고 나가기</li><li>95%는 업무 생각, 5%만 발 감각</li><li>맨발 걷기는 감각을 깨우는 연습</li></ul></div></div><div class="card"><div class="k">수 · 바르게 앉기</div><div class="t">골반이 먼저, 그다음 환경</div><div class="d"><ul><li>허리를 넣고 배를 조여 등 세우기</li><li>화면 위쪽은 눈높이 근처, 문서는 거치대</li><li>한 자세를 30분 이상 고정하지 않기</li></ul></div></div></div><div class="quote">"운동은 체육관에서 하는 게 아니라, 체육관 밖 23시간 동안 하는 것입니다."</div>`;},
+  finale(){
+    if(!revealed)return `<div class="eyebrow">LIVE RESULT · FINALE</div><h2>오늘 이 강의장은 얼마나 달라졌습니까?</h2><div class="reveal"><button id="revealBtn">결과 공개</button></div><div class="disclaimer">좋아진 분도, 그대로인 분도, 더 불편해진 분도 모두 데이터입니다. 정상 전후응답만 익명 집계합니다.</div>`;
+    const st=stats,ok=st.nPairs>0;
+    const rowsHtml=PARTS.map(p=>{const s=st.parts[p.id];return `<tr><td>${esc(p.name)}</td><td class="num">${s.nPre?fmt1(s.meanPre):'—'}</td><td class="num">${s.nPost?fmt1(s.meanPost):'—'}</td><td class="num good">${s.nPairs?fmt1(s.meanDrop):'—'}</td><td class="num">${s.nPairs?pct(s.imp1,s.nPairs)+'%':'—'}</td><td class="num">${s.nPairs}${s.src==='manual'?'*':''}</td></tr>`;}).join('');
+    const d=st.dropDist,tot=st.nPairs||1;
+    return `<div class="eyebrow">LIVE RESULT · FINALE · ${esc(cfg.title||cfg.session)}</div><h2>${ok?`전후 응답 ${st.nPairs}건 중 <span style="color:var(--green)">${pct(st.imp1,st.nPairs)}%</span>가 좋아졌고,<br>평균 <span style="color:var(--green)">${fmt1(st.meanDrop)}점</span> 감소했습니다`:'아직 전후 짝이 없습니다 — 사후 QR 입력을 기다리는 중'}</h2>
+    <div class="finale-grid"><div><div class="big"><div class="stat"><div class="l">참여자</div><div class="v num" data-count="${st.participants}">0<small>명</small></div><div class="m">익명 기기 기준 · 전후 짝 ${st.persons}명</div></div><div class="stat"><div class="l">1개 부위 이상 개선된 참여자</div><div class="v num good" data-count="${pct(st.personsImproved,st.persons)}">0<small>%</small></div><div class="m">${st.personsImproved} / ${st.persons}명</div></div><div class="stat"><div class="l">평균 불편감 감소</div><div class="v num good" data-count="${ok?fmt1(st.meanDrop):0}" data-dec="1">0<small>점</small></div><div class="m">전후 응답 ${st.nPairs}건 기준</div></div><div class="stat"><div class="l">2점 이상 감소</div><div class="v num amber" data-count="${pct(st.imp2,st.nPairs)}">0<small>%</small></div><div class="m">${st.imp2}건</div></div></div>
+    <div style="margin-top:18px"><div class="barrow"><span>3점 이상 감소</span><div class="track"><div class="fill" data-w="${pct(d[3],tot)}"></div></div><span class="num">${pct(d[3],tot)}%</span></div><div class="barrow"><span>2점 감소</span><div class="track"><div class="fill" data-w="${pct(d[2],tot)}"></div></div><span class="num">${pct(d[2],tot)}%</span></div><div class="barrow"><span>1점 감소</span><div class="track"><div class="fill" data-w="${pct(d[1],tot)}"></div></div><span class="num">${pct(d[1],tot)}%</span></div><div class="barrow"><span>변화 없음·증가</span><div class="track"><div class="fill same" data-w="${pct(d[0],tot)}"></div></div><span class="num">${pct(d[0],tot)}%</span></div></div></div>
+    <div><table class="parts"><thead><tr><th>부위</th><th>강의 전</th><th>실습 후</th><th>감소</th><th>개선</th><th>N</th></tr></thead><tbody>${rowsHtml}</tbody></table><div class="disclaimer">교육 직후 익명 자기보고 집계입니다. 대조군이 없으며 의학적 진단·치료 효과를 의미하지 않습니다. 변화가 없거나 악화된 분은 무리하지 말고 전문가와 상담하세요.${PARTS.some(p=>st.parts[p.id].src==='manual')?' *수기 집계 부위 포함.':''}</div></div></div>`;},
+  close(){return `<div class="eyebrow">ONE LAST THING</div><h2>오늘 가져갈 세 가지</h2><div class="cols c3"><div class="card"><div class="k">01 측정</div><div class="t">느낌을 숫자로 확인합니다</div><div class="d">오늘처럼 아침·잠들기 전 같은 부위를 0~10으로.</div></div><div class="card"><div class="k">02 리셋</div><div class="t">하루 10분 · 침대에서</div><div class="d">1분 신호 확인 → 3분 가장 불편한 부위 공 이완 → 5분 서기·걷기·앉기 중 하나 → 1분 재확인.</div></div><div class="card"><div class="k">03 유지</div><div class="t">서기·걷기·앉기 5%</div><div class="d">체육관 밖 23시간이 진짜 운동입니다.</div></div></div><div class="cols c2" style="margin-top:22px"><div class="card warm"><div class="k">복습 · 후속</div><div class="d">${cfg.reviewUrl?`복습 자료: <b>${esc(cfg.reviewUrl)}</b>`:'복습 자료는 기관 담당자를 통해 안내됩니다.'}<br>하루 10분 프로그램(베타)은 개인 신청이 아니라 <b>기관 공식 안내</b>를 통해 동일한 조건으로 안내합니다.</div></div><div class="card"><div class="k">${esc(cfg.brand)}</div><div class="d">스포츠의학 박사 김진 · 진핏메디컬PT${cfg.showContact&&cfg.contact?`<br>${esc(cfg.contact)}`:''}</div></div></div><div class="quote">"내 몸은 통제보다 관찰에서 바뀝니다."</div>`;}
+};
+const NOTES={
+  title:'[0:00–1:00] 안녕하십니까, 스포츠의학 박사 김진입니다. 오늘은 정보를 듣는 시간이 아니라 내 몸을 직접 확인하고, 몇 분 뒤 같은 기준으로 다시 확인하는 시간입니다. 결과가 좋아져도, 그대로여도 괜찮습니다.',
+  story:'[1:00–2:30] 수술 자국을 보여주며 30초. "한 번 다치면 예전으로 못 돌아간다"는 단정 대신 "예전 구조로는 못 돌아가도 기능은 되찾을 수 있었다"로.',
+  promise:'[2:30–4:00] 안전 3원칙을 반드시 읽는다. "비명이 나오는 강도는 오답" 명시. 사진 촬영은 마지막에 동의를 구하고 진행.',
+  method:'[4:00–5:00] "숨소리가 옆사람에게 들려야 한다"를 규칙으로. 벌금 유머는 여기서 예고. QR은 20초 안에 끝내도록 리허설.',
+  qr:'[1.5분] QR 화면에서는 말을 줄인다. "휴대폰을 들고 찍고, 숫자 하나 누르고, 내려놓기." 응답 수가 올라가는 것을 화면으로 보여주며 기다린다. 사후 QR에서는 평균 감소 폭을 읽어 준다.',
+  life:'[2분] 세 가지만: 서 있는 플랭크, 5%만, 골반. 앉기는 실기로 30초라도(허리 넣고 배 조이기).',
+  finale:'[2분] 버튼을 누르기 전 한 박자 쉬고 "좋아진 사람도, 그대로인 사람도 모두 데이터입니다"를 먼저 말한 뒤 공개. 숫자를 읽고 부위별 표를 짚는다. 한계 문구를 반드시 읽는다.',
+  close:'[1분] 세 가지 복습. 개인 연락처를 현장에서 받지 않는다. 사진 촬영은 동의 후.'
+};
+
+function render(){
+  const sl=SLIDES[idx];const app=$('#app');
+  const body=sl.type==='practice'||sl.type==='qr'?R[sl.type](sl):R[sl.type]();
+  app.innerHTML=`<div id="stage"><div class="chrome"><div><b>${esc(cfg.program)}</b> &nbsp;·&nbsp; ${esc(cfg.title||cfg.session)} &nbsp; ${chromeStatus()}</div><div class="clock" id="clock">${clockHtml()}</div></div><div class="slide ${sl.type==='finale'&&revealed?'finale':''}">${body}</div><div class="footer"><div>${esc(cfg.brand)} · <span class="kbd">→</span> 다음 <span class="kbd">←</span> 이전 <span class="kbd">S</span> 설정 <span class="kbd">N</span> 노트 <span class="kbd">R</span> 리포트 <span class="kbd">M</span> 수기집계 <span class="kbd">F</span> 전체화면 <span class="kbd">T</span> 타이머</div><div class="nav"><button id="refreshBtn">새로고침</button><button id="prevBtn">◀ 이전</button><button id="nextBtn">다음 ▶</button></div></div></div>${notesOn?`<div class="notes"><h4>강사 노트</h4>${esc(sl.type==='practice'?PART_BY[sl.part].note:NOTES[sl.type])}</div>`:''}`;
+  if(sl.type==='qr'){try{drawQR($('#qr'),joinUrl(sl.part,sl.phase));}catch(e){}}
+  if(sl.type==='finale'){const b=$('#revealBtn');if(b)b.addEventListener('click',()=>{revealed=true;render();});if(revealed)animateFinale();}
+  $('#prevBtn').addEventListener('click',()=>go(idx-1));$('#nextBtn').addEventListener('click',()=>go(idx+1));$('#refreshBtn').addEventListener('click',()=>refresh(true));
+  store('jr.idx.'+cfg.session,idx);
+}
+function animateFinale(){
+  document.querySelectorAll('[data-count]').forEach(el=>{const target=Number(el.dataset.count),dec=Number(el.dataset.dec||0),small=el.querySelector('small')?el.querySelector('small').outerHTML:'';const t0=performance.now(),dur=1400;
+    (function step(t){const k=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-k,3);el.innerHTML=(target*e).toFixed(dec)+small;if(k<1)requestAnimationFrame(step);})(t0);});
+  requestAnimationFrame(()=>document.querySelectorAll('.fill[data-w]').forEach(el=>el.style.width=el.dataset.w+'%'));
+}
+function go(n){if(n<0||n>=SLIDES.length)return;idx=n;if(!startedAt&&idx>0){startedAt=Date.now();store('jr.start.'+cfg.session,startedAt);}render();schedulePoll();}
+async function refresh(force){
+  const sl=SLIDES[idx];if(!force&&sl.type!=='qr'&&sl.type!=='finale')return;
+  try{rows=await api.rows(cfg.session);fetchErr=null;lastFetch=new Date().toLocaleTimeString('ko-KR',{hour12:false});}
+  catch(e){fetchErr=e.message;}
+  stats=computeStats(rows,manual());
+  if(sl.type==='qr'||(sl.type==='finale'&&revealed===false)||force)render();
+  else if(sl.type==='finale'){/* keep animation; only update on force */}
+}
+function schedulePoll(){clearInterval(pollTimer);const sl=SLIDES[idx];if(sl.type==='qr'||sl.type==='finale'){refresh();pollTimer=setInterval(refresh,5000);}}
+function toast(msg){let t=$('.toast');if(!t){t=document.createElement('div');t.className='toast';document.body.appendChild(t);}t.textContent=msg;clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.remove(),2200);}
+
+/* overlays */
+function closeOverlay(){const o=$('.overlay');if(o)o.remove();}
+function openSettings(){
+  closeOverlay();const o=document.createElement('div');o.className='overlay';
+  o.innerHTML=`<div class="panel"><h3>설정</h3>
+  <label>세션 코드 (영문·숫자·하이픈, QR에 포함됨)</label><input type="text" id="f_session" value="${esc(cfg.session)}">
+  <label>세션 표시명</label><input type="text" id="f_title" value="${esc(cfg.title)}">
+  <label>백엔드 URL (Google Apps Script 웹 앱 /exec)</label><input type="url" id="f_backend" value="${esc(cfg.backend)}" placeholder="https://script.google.com/macros/s/.../exec">
+  <label>참가자 페이지 주소 (비우면 현재 주소 사용: ${esc(location.origin+location.pathname)})</label><input type="url" id="f_join" value="${esc(cfg.joinBase)}" placeholder="https://drjinfit-ship-it.github.io/jinkim/web/">
+  <label>복습 자료 URL (선택)</label><input type="url" id="f_review" value="${esc(cfg.reviewUrl)}">
+  <label>퍼센트 표시 최소 N</label><input type="number" id="f_minN" value="${esc(cfg.minN)}" min="1" max="100">
+  <label>브랜드 / 프로그램명 / 연락처</label><input type="text" id="f_brand" value="${esc(cfg.brand)}"><input type="text" id="f_program" value="${esc(cfg.program)}" style="margin-top:6px"><input type="text" id="f_contact" value="${esc(cfg.contact)}" style="margin-top:6px">
+  <div class="row"><label style="margin:0;display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="f_demo" ${cfg.demo?'checked':''}> 데모 모드 (가상 데이터로 리허설)</label><label style="margin:0;display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="f_showContact" ${cfg.showContact?'checked':''}> 마지막 화면에 연락처 표시</label></div>
+  <div class="hint">${location.protocol==='file:'?'<span class="err">지금은 파일로 열려 있어 QR이 참가자 휴대폰에서 열리지 않습니다. GitHub Pages 주소로 배포한 뒤 그 주소로 여세요.</span><br>':''}실제 수집을 하려면 README의 5분 배포 절차대로 Apps Script를 배포하고 위 백엔드 URL을 넣은 뒤 "연결 테스트"를 누르세요. 데모 모드가 켜져 있으면 서버에 아무것도 보내지 않습니다.</div>
+  <div class="row"><button id="f_save">저장</button><button class="ghost" id="f_test">연결 테스트</button><button class="ghost" id="f_reset">진행 초기화 (타이머·슬라이드)</button><button class="ghost" id="f_close">닫기</button><span id="f_msg"></span></div></div>`;
+  document.body.appendChild(o);
+  const read=()=>{cfg.session=$('#f_session').value.trim().replace(/[^A-Za-z0-9_\-.]/g,'-').slice(0,64)||'session';cfg.title=$('#f_title').value.trim();cfg.backend=$('#f_backend').value.trim();cfg.joinBase=$('#f_join').value.trim();cfg.reviewUrl=$('#f_review').value.trim();cfg.minN=Math.max(1,Number($('#f_minN').value)||5);cfg.brand=$('#f_brand').value.trim()||DEFAULTS.brand;cfg.program=$('#f_program').value.trim()||DEFAULTS.program;cfg.contact=$('#f_contact').value.trim();cfg.demo=$('#f_demo').checked;cfg.showContact=$('#f_showContact').checked;saveCfg();};
+  $('#f_save').addEventListener('click',()=>{read();closeOverlay();revealed=false;startedAt=store('jr.start.'+cfg.session)||null;idx=Number(store('jr.idx.'+cfg.session))||0;render();schedulePoll();toast('저장됨');});
+  $('#f_test').addEventListener('click',async()=>{read();const m=$('#f_msg');m.textContent='확인 중…';m.className='';try{const j=await api.ping();m.textContent=j.demo?'데모 모드 — 서버 사용 안 함':'연결 성공';m.className='ok';}catch(e){m.textContent='연결 실패: 배포 URL과 "모든 사용자" 액세스 설정을 확인하세요';m.className='err';}});
+  $('#f_reset').addEventListener('click',()=>{if(!confirm('타이머와 슬라이드 위치를 처음으로 되돌립니다. 수집 데이터는 지워지지 않습니다.'))return;store('jr.start.'+cfg.session,null);startedAt=null;idx=0;revealed=false;closeOverlay();render();});
+  $('#f_close').addEventListener('click',closeOverlay);
+}
+function openManual(){
+  const sl=SLIDES[idx];const pid=sl.part||PARTS[0].id;const m=manual();const cur=m[pid]||{};
+  closeOverlay();const o=document.createElement('div');o.className='overlay';
+  o.innerHTML=`<div class="panel"><h3>수기 집계 (오프라인 대안) · ${esc(PART_BY[pid].name)}</h3><div class="hint">QR이 안 될 때 손들기로 셉니다. "실습 후 몇 점 좋아졌습니까?" — 각 인원수를 입력하면 이 부위의 전후 짝 데이터로 사용됩니다(온라인 짝이 하나라도 있으면 온라인 데이터가 우선).</div>
+  <div class="manual-grid" style="margin-top:14px"><div><label>변화 없음</label><input type="number" id="m_same" min="0" value="${cur.same||0}"></div><div><label>1점 감소</label><input type="number" id="m_d1" min="0" value="${cur.d1||0}"></div><div><label>2점 감소</label><input type="number" id="m_d2" min="0" value="${cur.d2||0}"></div><div><label>3점 이상 감소</label><input type="number" id="m_d3" min="0" value="${cur.d3||0}"></div><div><label>증가</label><input type="number" id="m_worse" min="0" value="${cur.worse||0}"></div></div>
+  <div class="row"><button id="m_save">저장</button><button class="ghost" id="m_clear">이 부위 삭제</button><button class="ghost" id="m_close">닫기</button></div></div>`;
+  document.body.appendChild(o);
+  $('#m_save').addEventListener('click',()=>{m[pid]={same:+$('#m_same').value||0,d1:+$('#m_d1').value||0,d2:+$('#m_d2').value||0,d3:+$('#m_d3').value||0,worse:+$('#m_worse').value||0};store('jr.manual.'+cfg.session,m);closeOverlay();stats=computeStats(rows,manual());render();toast('수기 집계 저장');});
+  $('#m_clear').addEventListener('click',()=>{delete m[pid];store('jr.manual.'+cfg.session,m);closeOverlay();stats=computeStats(rows,manual());render();});
+  $('#m_close').addEventListener('click',closeOverlay);
+}
+function openReport(){
+  const st=stats;const lines=[];
+  lines.push(`# ${cfg.title||cfg.session} — 현장 익명 사전/사후 자기평가 집계 (${new Date().toLocaleString('ko-KR')})`);
+  lines.push(`참여자(익명 기기) ${st.participants}명 · 전후 짝 있는 참여자 ${st.persons}명 · 전후 응답 쌍 ${st.nPairs}건`);
+  lines.push(st.nPairs?`전체: 평균 ${fmt1(st.meanDrop)}점 감소 · 1점 이상 개선 ${pct(st.imp1,st.nPairs)}% · 2점 이상 ${pct(st.imp2,st.nPairs)}% · 변화 없음 ${pct(st.same,st.nPairs)}% · 증가 ${pct(st.worse,st.nPairs)}% · 1개 부위 이상 개선된 참여자 ${pct(st.personsImproved,st.persons)}%`:'전후 짝 없음');
+  lines.push('');lines.push('| 부위 | 사전 N | 사전 평균 | 사후 N | 사후 평균 | 짝 N | 평균 감소 | 1점↑개선 | 2점↑ | 같음 | 증가 | 출처 |');lines.push('|---|---|---|---|---|---|---|---|---|---|---|---|');
+  PARTS.forEach(p=>{const s=st.parts[p.id];lines.push(`| ${p.name} | ${s.nPre} | ${s.nPre?fmt1(s.meanPre):'—'} | ${s.nPost} | ${s.nPost?fmt1(s.meanPost):'—'} | ${s.nPairs} | ${s.nPairs?fmt1(s.meanDrop):'—'} | ${s.nPairs?pct(s.imp1,s.nPairs)+'%':'—'} | ${s.nPairs?pct(s.imp2,s.nPairs)+'%':'—'} | ${s.nPairs?pct(s.same,s.nPairs)+'%':'—'} | ${s.nPairs?pct(s.worse,s.nPairs)+'%':'—'} | ${s.src==='manual'?'수기':'온라인'} |`);});
+  lines.push('');lines.push('한계: 교육 직후 익명 자기보고, 대조군 없음, 의학적 효과를 의미하지 않음. 같은 기기의 무작위 토큰으로 사전·사후를 짝지었으며 미매칭 응답은 평균에만 포함.');
+  const csv=['ts,session,token,part,phase,score,extra'].concat(rows.map(r=>[r.ts||'',cfg.session,r.token,r.part,r.phase,r.score,JSON.stringify(r.extra||{}).replace(/"/g,'""')].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','))).join('\n');
+  closeOverlay();const o=document.createElement('div');o.className='overlay';
+  o.innerHTML=`<div class="panel"><h3>D+1 리포트 · ${esc(cfg.title||cfg.session)} ${cfg.demo?'<span class="pill demo">데모 데이터</span>':''}</h3><textarea id="rep" readonly>${esc(lines.join('\n'))}</textarea><div class="row"><button id="r_copy">리포트 복사</button><button class="ghost" id="r_csv">원자료 CSV 보기</button><button class="ghost" id="r_refresh">새로고침</button><button class="ghost" id="r_close">닫기</button></div><div class="hint">원자료는 Google 스프레드시트 "responses" 시트에 그대로 남아 있습니다. 이 화면의 CSV는 현재 불러온 세션 데이터입니다.</div><textarea id="csv" readonly hidden>${esc(csv)}</textarea></div>`;
+  document.body.appendChild(o);
+  $('#r_copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(lines.join('\n'));toast('복사됨');}catch(e){$('#rep').select();}});
+  $('#r_csv').addEventListener('click',()=>{const c=$('#csv');c.hidden=!c.hidden;});
+  $('#r_refresh').addEventListener('click',async()=>{await refresh(true);openReport();});
+  $('#r_close').addEventListener('click',closeOverlay);
+}
+
+function runPresenter(){
+  render();schedulePoll();
+  setInterval(()=>{const c=$('#clock');if(c)c.innerHTML=clockHtml();},1000);
+  document.addEventListener('keydown',e=>{
+    if(e.target&&/INPUT|TEXTAREA/.test(e.target.tagName))return;
+    if(e.key==='Escape'){closeOverlay();return;}
+    if($('.overlay'))return;
+    const k=e.key;
+    if(k==='ArrowRight'||k===' '||k==='PageDown'||k==='Enter'){e.preventDefault();go(idx+1);}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();go(idx-1);}
+    else if(k==='Home'){go(0);}else if(k==='End'){go(SLIDES.length-1);}
+    else if(k==='s'||k==='S')openSettings();else if(k==='n'||k==='N'){notesOn=!notesOn;render();}
+    else if(k==='r'||k==='R')openReport();else if(k==='m'||k==='M')openManual();
+    else if(k==='f'||k==='F'){if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();}
+    else if(k==='t'||k==='T'){startedAt=Date.now();store('jr.start.'+cfg.session,startedAt);toast('타이머 시작');}
+    else if(k==='?'){toast('→ 다음 · ← 이전 · S 설정 · N 노트 · R 리포트 · M 수기집계 · F 전체화면 · T 타이머 재시작');}
+  });
+  if(!cfg.backend&&!cfg.demo)setTimeout(()=>toast('S 키로 백엔드 URL을 설정하거나 데모 모드를 켜세요'),600);
+}
+
+const q=qs();
+if(q.mode==='join')runJoin(q);else runPresenter();
+})();
+</script>
